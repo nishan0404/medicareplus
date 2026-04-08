@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\('App created OK'\\)\")",
+      "Bash(pip list:*)",
+      "Bash(grep -n \"verify_password\\\\|rate_limit\\\\|timeout\" /c/Users/nisha/MediCarePlus/app/routes/*.py)",
+      "Bash(pip show:*)",
+      "Bash(venv/Scripts/pip install:*)"
+    ]
+  }
+}

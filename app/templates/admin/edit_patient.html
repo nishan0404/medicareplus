@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-user-edit me-2"></i>Edit Patient
+        </h2>
+        <p class="text-muted">Editing details for {{ patient.full_name }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/patients" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Patient Details</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="/admin/patients/{{ patient.id }}/edit">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Full Name</label>
+                        <input type="text" name="full_name" class="form-control"
+                               value="{{ patient.full_name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Date of Birth</label>
+                        <input type="date" name="date_of_birth" class="form-control"
+                               value="{{ patient.date_of_birth }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email Address</label>
+                        <input type="email" name="email" class="form-control"
+                               value="{{ patient.email }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Phone Number</label>
+                        <input type="text" name="phone" class="form-control"
+                               value="{{ patient.phone }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Account Status</label>
+                        <select name="is_active" class="form-control">
+                            <option value="1" {% if patient.is_active %}selected{% endif %}>Active — Patient can login</option>
+                            <option value="0" {% if not patient.is_active %}selected{% endif %}>Inactive — Patient cannot login</option>
+                        </select>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            New Password
+                            <span class="text-muted fw-normal">(leave blank to keep current)</span>
+                        </label>
+                        <input type="password" name="new_password" class="form-control"
+                               placeholder="Enter new password">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control"
+                               placeholder="Repeat new password">
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

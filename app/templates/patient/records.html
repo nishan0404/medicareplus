@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-file-medical me-2"></i>Medical Records
+        </h2>
+        <p class="text-muted">Your complete health history</p>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <a href="/patient/records/pdf" class="btn btn-success">
+            <i class="fas fa-download me-2"></i>Download PDF
+        </a>
+        <a href="/patient/dashboard" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="recordsTabs">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#consultations">
+            <i class="fas fa-stethoscope me-2"></i>Consultations
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#prescriptions">
+            <i class="fas fa-pills me-2"></i>Prescriptions
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- Consultations Tab -->
+    <div class="tab-pane fade show active" id="consultations">
+        {% if appointments %}
+            {% for appt in appointments %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-success mb-1">
+                                <i class="fas fa-calendar me-2"></i>
+                                {{ appt.appointment_date.strftime('%d %B %Y') }}
+                            </h6>
+                            <small class="text-muted">
+                                {{ appt.appointment_time.strftime('%I:%M %p') }}
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Doctor</small>
+                            <p class="mb-0 fw-bold">{{ appt.doctor.full_name }}</p>
+                            <small class="text-muted">{{ appt.doctor.specialisation }}</small>
+                        </div>
+                        <div class="col-md-4">
+                            {% if appt.notes %}
+                                <small class="text-muted">Diagnosis</small>
+                                <p class="mb-0 fw-bold">{{ appt.notes.diagnosis }}</p>
+                            {% else %}
+                                <span class="text-muted">No notes recorded</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2 text-end">
+                            {% if appt.notes %}
+                            <button class="btn btn-outline-primary btn-sm"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#notes-{{ appt.id }}">
+                                <i class="fas fa-eye me-1"></i>View Notes
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if appt.notes %}
+                    <div class="collapse mt-3" id="notes-{{ appt.id }}">
+                        <div class="bg-light p-3 rounded">
+                            <strong>Consultation Notes:</strong>
+                            <p class="mb-2 mt-1">{{ appt.notes.notes }}</p>
+                            {% if appt.notes.follow_up_date %}
+                            <strong>Follow-up Date:</strong>
+                            <p class="mb-0">
+                                {{ appt.notes.follow_up_date.strftime('%d %B %Y') }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-file-medical fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No consultation records yet</h5>
+                    <p class="text-muted">
+                        Your medical history will appear here after your first appointment
+                    </p>
+                    <a href="/patient/book" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus me-2"></i>Book an Appointment
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Prescriptions Tab -->
+    <div class="tab-pane fade" id="prescriptions">
+        {% if prescriptions %}
+            <div class="row">
+                {% for rx in prescriptions %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="fw-bold text-primary">
+                                <i class="fas fa-pills me-2"></i>{{ rx.medication_name }}
+                            </h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">Dosage</small>
+                                    <p class="fw-bold mb-1">{{ rx.dosage }}</p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Frequency</small>
+                                    <p class="fw-bold mb-1">{{ rx.frequency }}</p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Duration</small>
+                                    <p class="fw-bold mb-1">{{ rx.duration_days }} days</p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Issued</small>
+                                    <p class="fw-bold mb-1">
+                                        {{ rx.issued_at.strftime('%d %b %Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                            {% if rx.instructions %}
+                            <div class="bg-light p-2 rounded mt-2">
+                                <small>
+                                    <strong>Instructions:</strong> {{ rx.instructions }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-pills fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No prescriptions yet</h5>
+                    <p class="text-muted">
+                        Prescriptions issued by your doctor will appear here
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}
+```

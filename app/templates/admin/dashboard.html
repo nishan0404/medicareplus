@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+        </h2>
+        <p class="text-muted">Welcome, {{ current_user.full_name }}</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-2 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body p-0">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h3 class="fw-bold">{{ total_patients }}</h3>
+                <small class="text-muted">Total Patients</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body p-0">
+                <i class="fas fa-user-md fa-2x text-success mb-2"></i>
+                <h3 class="fw-bold">{{ total_doctors }}</h3>
+                <small class="text-muted">Total Doctors</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body p-0">
+                <i class="fas fa-calendar fa-2x text-warning mb-2"></i>
+                <h3 class="fw-bold">{{ this_month }}</h3>
+                <small class="text-muted">This Month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body p-0">
+                <i class="fas fa-calendar-times fa-2x text-danger mb-2"></i>
+                <h3 class="fw-bold">{{ cancellation_rate }}%</h3>
+                <small class="text-muted">Cancellation Rate</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body p-0">
+                <i class="fas fa-calendar-check fa-2x text-info mb-2"></i>
+                <h3 class="fw-bold">{{ total_appointments }}</h3>
+                <small class="text-muted">Total Appointments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body p-0">
+                <i class="fas fa-stethoscope fa-2x text-secondary mb-2"></i>
+                <h3 class="fw-bold">{{ total_symptom_checks }}</h3>
+                <small class="text-muted">Symptom Checks</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="fw-bold text-muted mb-3">Quick Actions</h5>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="/admin/patients" class="text-decoration-none">
+            <div class="card p-3 text-center h-100">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h6 class="fw-bold">Manage Patients</h6>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="/admin/doctors" class="text-decoration-none">
+            <div class="card p-3 text-center h-100">
+                <i class="fas fa-user-md fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">Manage Doctors</h6>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="/admin/appointments" class="text-decoration-none">
+            <div class="card p-3 text-center h-100">
+                <i class="fas fa-calendar fa-2x text-warning mb-2"></i>
+                <h6 class="fw-bold">All Appointments</h6>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="/admin/audit-log" class="text-decoration-none">
+            <div class="card p-3 text-center h-100">
+                <i class="fas fa-shield-alt fa-2x text-danger mb-2"></i>
+                <h6 class="fw-bold">Audit Log</h6>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Appointments -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-clock me-2"></i>Recent Appointments
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in recent_appointments %}
+                <tr>
+                    <td>{{ appt.patient.full_name }}</td>
+                    <td>{{ appt.doctor.full_name }}</td>
+                    <td>{{ appt.appointment_date.strftime('%d %b %Y') }}</td>
+                    <td>{{ appt.appointment_time.strftime('%I:%M %p') }}</td>
+                    <td>
+                        {% if appt.status == 'Completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif appt.status == 'Upcoming' %}
+                            <span class="badge bg-primary">Upcoming</span>
+                        {% elif appt.status == 'Cancelled' %}
+                            <span class="badge bg-danger">Cancelled</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ appt.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

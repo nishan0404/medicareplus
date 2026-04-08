@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-pills me-2"></i>Issue Prescription
+        </h2>
+        <p class="text-muted">
+            Patient: <strong>{{ appt.patient.full_name }}</strong> &nbsp;·&nbsp;
+            Date: <strong>{{ appt.appointment_date.strftime('%d %B %Y') }}</strong>
+        </p>
+    </div>
+    <div class="col-auto">
+        <a href="/doctor/appointment/{{ appt.id }}/notes" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Notes
+        </a>
+    </div>
+</div>
+
+<div class="row">
+
+    <!-- Add Prescription Form -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Add Prescription</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Medication Name <span class="text-danger">*</span></label>
+                        <input type="text" name="medication_name" class="form-control"
+                               placeholder="e.g. Amoxicillin 500mg" maxlength="150" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Dosage <span class="text-danger">*</span></label>
+                            <input type="text" name="dosage" class="form-control"
+                                   placeholder="e.g. 500mg" maxlength="100" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Duration (days) <span class="text-danger">*</span></label>
+                            <input type="number" name="duration_days" class="form-control"
+                                   placeholder="e.g. 7" min="1" max="365" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Frequency <span class="text-danger">*</span></label>
+                        <select name="frequency" class="form-control" required>
+                            <option value="">Select frequency</option>
+                            <option value="Once daily">Once daily</option>
+                            <option value="Twice daily">Twice daily</option>
+                            <option value="Three times daily">Three times daily</option>
+                            <option value="Four times daily">Four times daily</option>
+                            <option value="As needed">As needed</option>
+                            <option value="At bedtime">At bedtime</option>
+                            <option value="With meals">With meals</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            Additional Instructions
+                            <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <textarea name="instructions" class="form-control" rows="2"
+                                  placeholder="e.g. Take with food and water" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Prescription
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Prescriptions -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Prescriptions Added
+                    <span class="badge bg-primary ms-2">{{ prescriptions|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if prescriptions %}
+                    {% for rx in prescriptions %}
+                    <div class="border rounded p-3 mb-3 position-relative">
+                        <!-- Delete button -->
+                        <form method="POST"
+                              action="{{ url_for('doctor.delete_prescription', rx_id=rx.id) }}"
+                              class="position-absolute top-0 end-0 m-2"
+                              onsubmit="return confirm('Remove {{ rx.medication_name }}?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+
+                        <h6 class="fw-bold text-primary mb-1 pe-5">
+                            <i class="fas fa-pills me-2"></i>{{ rx.medication_name }}
+                        </h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Dosage</small>
+                                <p class="mb-1 fw-bold">{{ rx.dosage }}</p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Frequency</small>
+                                <p class="mb-1 fw-bold">{{ rx.frequency }}</p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Duration</small>
+                                <p class="mb-0 fw-bold">{{ rx.duration_days }} days</p>
+                            </div>
+                        </div>
+                        {% if rx.instructions %}
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-info-circle me-1"></i>{{ rx.instructions }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-grid mt-3">
+                        <a href="{{ url_for('doctor.dashboard') }}" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Done
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-pills fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No prescriptions added yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

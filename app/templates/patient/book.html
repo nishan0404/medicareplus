@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-calendar-plus me-2"></i>Book an Appointment
+        </h2>
+        <p class="text-muted">Find a doctor and schedule your visit</p>
+    </div>
+    <div class="col-auto">
+        <a href="/patient/dashboard" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+
+    <!-- Search Panel -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2"></i>Search Doctors
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Specialisation</label>
+                    <select class="form-control" id="specialisation_filter">
+                        <option value="">All Specialisations</option>
+                        {% for spec in specialisations %}
+                        <option value="{{ spec }}">{{ spec }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Date</label>
+                    <input type="date" class="form-control" id="date_filter"
+                           min="{{ today }}"
+                           value="{{ today }}">
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-primary" onclick="searchDoctors()">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctor Results -->
+    <div class="col-md-8">
+        <div id="doctorResults">
+            {% for doctor in doctors %}
+            <div class="card mb-3 doctor-card" data-spec="{{ doctor.specialisation }}">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="fw-bold mb-1">
+                                <i class="fas fa-user-md me-2 text-success"></i>
+                                    {{ doctor.full_name }}
+                            </h5>
+                            <span class="badge bg-success mb-2">{{ doctor.specialisation }}</span>
+                            {% if doctor.bio %}
+                            <p class="text-muted small mb-0">
+                                {{ doctor.bio[:120] }}{% if doctor.bio|length > 120 %}…{% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-primary btn-sm"
+                                    onclick="showBookingForm({{ doctor.id }}, '{{ doctor.full_name }}', '{{ doctor.specialisation }}')">
+                                <i class="fas fa-calendar-plus me-1"></i>Book
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Booking Form (hidden by default) -->
+                    <div class="booking-form mt-3" id="form-{{ doctor.id }}" style="display:none;">
+                        <hr>
+                        <form method="POST" action="/patient/book">
+                            <input type="hidden" name="doctor_id" value="{{ doctor.id }}">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Date</label>
+                                    <input type="date" name="appointment_date"
+                                           class="form-control" id="appt-date-{{ doctor.id }}"
+                                           min="{{ today }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Time</label>
+                                    <select name="appointment_time" class="form-control" required>
+                                        <option value="">Select time</option>
+                                        <option value="09:00">9:00 AM</option>
+                                        <option value="09:30">9:30 AM</option>
+                                        <option value="10:00">10:00 AM</option>
+                                        <option value="10:30">10:30 AM</option>
+                                        <option value="11:00">11:00 AM</option>
+                                        <option value="11:30">11:30 AM</option>
+                                        <option value="13:00">1:00 PM</option>
+                                        <option value="13:30">1:30 PM</option>
+                                        <option value="14:00">2:00 PM</option>
+                                        <option value="14:30">2:30 PM</option>
+                                        <option value="15:00">3:00 PM</option>
+                                        <option value="15:30">3:30 PM</option>
+                                        <option value="16:00">4:00 PM</option>
+                                        <option value="16:30">4:30 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    Reason for Visit
+                                    <span class="text-muted fw-normal">(optional)</span>
+                                </label>
+                                <textarea name="reason" class="form-control" rows="2"
+                                          placeholder="Briefly describe your symptoms or reason for visit"></textarea>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check me-2"></i>Confirm Booking
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="hideBookingForm({{ doctor.id }})">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date_filter').value = today;
+
+    function showBookingForm(doctorId, name, spec) {
+        // Hide all other forms first
+        document.querySelectorAll('.booking-form').forEach(f => f.style.display = 'none');
+        // Show this doctor's form
+        document.getElementById('form-' + doctorId).style.display = 'block';
+        // Set minimum date
+        const dateInput = document.getElementById('appt-date-' + doctorId);
+        if (dateInput) dateInput.min = today;
+    }
+
+    function hideBookingForm(doctorId) {
+        document.getElementById('form-' + doctorId).style.display = 'none';
+    }
+
+    function searchDoctors() {
+        const spec = document.getElementById('specialisation_filter').value.toLowerCase();
+        const cards = document.querySelectorAll('.doctor-card');
+        cards.forEach(card => {
+            const cardSpec = card.getAttribute('data-spec').toLowerCase();
+            if (!spec || cardSpec.includes(spec)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+/* ── Inbox Layout ── */
+.inbox-header { margin-bottom: 24px; }
+.inbox-title  { color: #1A5276; font-weight: 700; margin-bottom: 4px; }
+.inbox-subtitle { color: #64748b; font-size: 14px; }
+
+/* ── Search bar ── */
+#search-input {
+  border-radius: 24px; border: 2px solid #e2e8f0;
+  padding: 10px 20px; font-size: 14px;
+  transition: border-color .2s;
+}
+#search-input:focus { border-color: #1A8A4A; box-shadow: none; }
+
+/* ── Chat thread card ── */
+.thread-card {
+  background: white;
+  border-radius: 14px;
+  border: 1.5px solid #e2e8f0;
+  padding: 16px 20px;
+  margin-bottom: 10px;
+  transition: box-shadow .2s, border-color .2s, transform .15s;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  color: inherit;
+}
+.thread-card:hover {
+  box-shadow: 0 4px 20px rgba(26,82,118,.12);
+  border-color: #1A8A4A;
+  transform: translateY(-1px);
+  color: inherit;
+  text-decoration: none;
+}
+.thread-card.has-unread { border-left: 4px solid #ef4444; }
+.thread-card.chat-open  { border-left: 4px solid #22c55e; }
+
+/* ── Avatar ── */
+.thread-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, #1A5276, #1A8A4A);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 18px; flex-shrink: 0;
+}
+
+/* ── Thread body ── */
+.thread-name    { font-weight: 600; font-size: 15px; color: #1A5276; }
+.thread-spec    { font-size: 12px; color: #94a3b8; margin-left: 6px; }
+.thread-preview { font-size: 13px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
+.thread-preview.unread { color: #1e293b; font-weight: 600; }
+.thread-meta    { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+
+/* ── Status badges ── */
+.badge-open   { background: #dcfce7; color: #166534; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.badge-closed { background: #f1f5f9; color: #64748b; font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+
+/* ── Unread pill ── */
+.unread-pill {
+  background: #ef4444; color: white;
+  border-radius: 20px; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; min-width: 22px; text-align: center;
+}
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+.empty-state i { font-size: 56px; margin-bottom: 16px; opacity: .25; }
+</style>
+
+<!-- Header -->
+<div class="inbox-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h2 class="inbox-title">
+      <i class="fas fa-comments me-2"></i>My Chats
+      {% if total_unread > 0 %}
+        <span class="unread-pill ms-2">{{ total_unread }}</span>
+      {% endif %}
+    </h2>
+    <p class="inbox-subtitle">Live chat history with your doctors</p>
+  </div>
+  <a href="{{ url_for('patient.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="fas fa-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<!-- Search -->
+{% if appointments %}
+<div class="mb-3">
+  <input type="text" id="search-input" class="form-control"
+         placeholder="Search by doctor name or specialty…"
+         oninput="filterThreads(this.value)">
+</div>
+
+<!-- Filter tabs -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  <button class="btn btn-sm btn-primary filter-btn active" data-filter="all" onclick="setFilter('all', this)">
+    All <span class="badge bg-white text-primary ms-1">{{ appointments|length }}</span>
+  </button>
+  <button class="btn btn-sm btn-outline-success filter-btn" data-filter="open" onclick="setFilter('open', this)">
+    <i class="fas fa-circle text-success me-1" style="font-size:8px;"></i>Open Now
+  </button>
+  <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="unread" onclick="setFilter('unread', this)">
+    Unread
+    {% if total_unread > 0 %}<span class="badge bg-danger ms-1">{{ total_unread }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- Thread list -->
+<div id="thread-list">
+  {% for appt in appointments %}
+    {% set unread   = unread_counts.get(appt.id, 0) %}
+    {% set is_open  = chat_open_map.get(appt.id, False) %}
+    {% set last_msg = last_messages.get(appt.id) %}
+
+    <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
+       class="thread-card {% if unread > 0 %}has-unread{% elif is_open %}chat-open{% endif %}"
+       data-open="{{ 'true' if is_open else 'false' }}"
+       data-unread="{{ unread }}"
+       data-search="{{ appt.doctor.full_name|lower }} {{ appt.doctor.specialisation|lower }}">
+
+      <div class="d-flex align-items-center gap-3">
+
+        <!-- Avatar -->
+        <div class="thread-avatar">
+          <i class="fas fa-user-md"></i>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-grow-1 overflow-hidden">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <div>
+              <span class="thread-name">{{ appt.doctor.full_name }}</span>
+              <span class="thread-spec">{{ appt.doctor.specialisation }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if unread > 0 %}
+                <span class="unread-pill">{{ unread }}</span>
+              {% endif %}
+              <span class="thread-meta">
+                {% if last_msg %}
+                  {{ last_msg.sent_at.strftime('%d %b') }}
+                {% else %}
+                  {{ appt.appointment_date.strftime('%d %b') }}
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- Last message preview -->
+          <div class="thread-preview {% if unread > 0 %}unread{% endif %}">
+            {% if last_msg %}
+              {% if last_msg.msg_type == 'image' %}
+                <i class="fas fa-image me-1 text-muted"></i>Photo
+              {% elif last_msg.msg_type == 'file' %}
+                <i class="fas fa-paperclip me-1 text-muted"></i>{{ last_msg.file_name }}
+              {% else %}
+                {% if last_msg.sender_role == 'patient' %}You: {% endif %}{{ last_msg.message }}
+              {% endif %}
+            {% else %}
+              <span class="text-muted fst-italic">No messages yet</span>
+            {% endif %}
+          </div>
+
+          <!-- Appointment meta -->
+          <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+            <span class="thread-meta">
+              <i class="fas fa-calendar-alt me-1"></i>
+              {{ appt.appointment_date.strftime('%d %b %Y') }}
+              &nbsp;{{ appt.appointment_time.strftime('%I:%M %p') }}
+            </span>
+
+            {% if is_open %}
+              <span class="badge-open">
+                <i class="fas fa-circle me-1" style="font-size:7px;"></i>Chat Open
+              </span>
+            {% elif appt.status == 'Completed' %}
+              <span class="badge-closed">
+                <i class="fas fa-check-circle me-1"></i>Completed
+              </span>
+            {% elif appt.status == 'No-Show' %}
+              <span style="background:#fee2e2;color:#991b1b;font-size:11px;padding:3px 10px;border-radius:20px;">
+                <i class="fas fa-times-circle me-1"></i>No-Show
+              </span>
+            {% elif appt.status == 'Cancelled' %}
+              <span style="background:#f3f4f6;color:#6b7280;font-size:11px;padding:3px 10px;border-radius:20px;">
+                <i class="fas fa-ban me-1"></i>Cancelled
+              </span>
+            {% elif appt.status == 'Upcoming' %}
+              <span class="badge-closed">
+                <i class="fas fa-hourglass-half me-1"></i>Chat Not Open Yet
+              </span>
+            {% else %}
+              <span class="badge-closed">{{ appt.status }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <i class="fas fa-chevron-right text-muted" style="font-size:13px; flex-shrink:0;"></i>
+
+      </div>
+    </a>
+  {% endfor %}
+
+  <!-- No-results placeholder (hidden by default) -->
+  <div id="no-results" class="empty-state" style="display:none;">
+    <i class="fas fa-search d-block"></i>
+    <p>No chats match your search.</p>
+  </div>
+</div>
+
+{% else %}
+<!-- Empty state -->
+<div class="empty-state">
+  <i class="fas fa-comments d-block"></i>
+  <h5 class="text-muted">No chats yet</h5>
+  <p class="mb-3">Book an appointment to start chatting with a doctor.</p>
+  <a href="{{ url_for('appointment.book') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Book Appointment
+  </a>
+</div>
+{% endif %}
+
+<script>
+let activeFilter = 'all';
+
+function filterThreads(query) {
+  query = query.toLowerCase().trim();
+  applyFilters(query, activeFilter);
+}
+
+function setFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('btn-primary', 'btn-outline-success', 'btn-outline-danger', 'btn-success', 'btn-danger');
+    const base = b.dataset.filter === 'open' ? 'btn-outline-success'
+               : b.dataset.filter === 'unread' ? 'btn-outline-danger'
+               : 'btn-outline-secondary';
+    b.classList.add(base);
+    b.classList.remove('active');
+  });
+  const activeClass = filter === 'open' ? 'btn-success'
+                    : filter === 'unread' ? 'btn-danger'
+                    : 'btn-primary';
+  btn.classList.remove('btn-outline-secondary', 'btn-outline-success', 'btn-outline-danger');
+  btn.classList.add(activeClass, 'active');
+  applyFilters(document.getElementById('search-input').value.toLowerCase().trim(), filter);
+}
+
+function applyFilters(query, filter) {
+  const cards = document.querySelectorAll('#thread-list .thread-card');
+  let visible = 0;
+
+  cards.forEach(card => {
+    const matchSearch = !query || card.dataset.search.includes(query);
+    const matchFilter =
+      filter === 'all'    ? true :
+      filter === 'open'   ? card.dataset.open   === 'true' :
+      filter === 'unread' ? parseInt(card.dataset.unread) > 0 :
+      true;
+
+    if (matchSearch && matchFilter) {
+      card.style.display = '';
+      visible++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  document.getElementById('no-results').style.display = visible === 0 ? 'block' : 'none';
+}
+
+/* Auto-refresh unread counts every 30s without full page reload */
+async function refreshUnread() {
+  const cards = document.querySelectorAll('#thread-list .thread-card');
+  for (const card of cards) {
+    const href = card.getAttribute('href');
+    const match = href.match(/\/chat\/(\d+)/);
+    if (!match) continue;
+    const apptId = match[1];
+    try {
+      const res  = await fetch(`/chat/${apptId}/status`);
+      const data = await res.json();
+      const pill = card.querySelector('.unread-pill');
+      if (data.unread > 0) {
+        if (pill) { pill.textContent = data.unread; }
+        else {
+          const metaRow = card.querySelector('.d-flex.align-items-center.gap-2.mb-1 .d-flex');
+          // Update data attribute for filter
+        }
+        card.dataset.unread = data.unread;
+        if (!card.classList.contains('has-unread')) {
+          card.classList.remove('chat-open');
+          card.classList.add('has-unread');
+        }
+      } else {
+        if (pill) pill.remove();
+        card.dataset.unread = 0;
+        card.classList.remove('has-unread');
+      }
+    } catch (_) {}
+  }
+}
+
+setInterval(refreshUnread, 30000);
+</script>
+
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block content %}
+{% macro paginate(pg, ep, status='') %}
+{% if pg.pages > 1 %}
+<nav class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">
+  <li class="page-item {% if not pg.has_prev %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for(ep, page=pg.prev_num, status=status) }}">&laquo;</a>
+  </li>
+  {% for p in pg.iter_pages(left_edge=1,right_edge=1,left_current=2,right_current=2) %}
+    {% if p %}<li class="page-item {% if p==pg.page %}active{% endif %}">
+      <a class="page-link" href="{{ url_for(ep, page=p, status=status) }}">{{ p }}</a></li>
+    {% else %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+  {% endfor %}
+  <li class="page-item {% if not pg.has_next %}disabled{% endif %}">
+    <a class="page-link" href="{{ url_for(ep, page=pg.next_num, status=status) }}">&raquo;</a>
+  </li>
+</ul>
+<p class="text-center text-muted mt-1" style="font-size:12px;">
+  Showing {{ pg.items|length }} of {{ pg.total }} appointments
+</p></nav>
+{% endif %}
+{% endmacro %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-calendar me-2"></i>All Appointments
+        </h2>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <a href="/admin/appointments/pdf{% if status_filter %}?status={{ status_filter }}{% endif %}"
+           class="btn btn-danger">
+            <i class="fas fa-file-pdf me-2"></i>Download PDF
+        </a>
+        <a href="/admin/dashboard" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="/admin/appointments">
+            <div class="row">
+                <div class="col-md-4">
+                    <select name="status" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="Upcoming" {% if status_filter == 'Upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        <option value="No-Show" {% if status_filter == 'No-Show' %}selected{% endif %}>No-Show</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Appointments Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            Appointments
+            <span class="badge bg-primary ms-2">{{ appointments|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                <tr>
+                    <td class="fw-bold">{{ appt.patient.full_name }}</td>
+                    <td>{{ appt.doctor.full_name }}</td>
+                    <td>{{ appt.appointment_date.strftime('%d %b %Y') }}</td>
+                    <td>{{ appt.appointment_time.strftime('%I:%M %p') }}</td>
+                    <td>{{ appt.reason if appt.reason else 'Not specified' }}</td>
+                    <td>
+                        {% if appt.status == 'Completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif appt.status == 'Upcoming' %}
+                            <span class="badge bg-primary">Upcoming</span>
+                        {% elif appt.status == 'Cancelled' %}
+                            <span class="badge bg-danger">Cancelled</span>
+                        {% elif appt.status == 'In-Progress' %}
+                            <span class="badge bg-warning">In Progress</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ appt.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ paginate(pagination, 'admin.appointments', status=status_filter) }}
+</div>
+
+{% endblock %}

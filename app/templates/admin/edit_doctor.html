@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-user-edit me-2"></i>Edit Doctor
+        </h2>
+        <p class="text-muted">Editing details for {{ doctor.full_name }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/doctors" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Doctor Details</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="/admin/doctors/{{ doctor.id }}/edit">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Full Name</label>
+                        <input type="text" name="full_name" class="form-control"
+                               value="{{ doctor.full_name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Specialisation</label>
+                        <select name="specialisation" class="form-control" required>
+                            <option value="">Select specialisation</option>
+                            {% for spec in ['General Practice','Cardiology','Dermatology','Paediatrics','Psychiatry','Orthopaedics','Neurology','Oncology','Other'] %}
+                            <option value="{{ spec }}" {% if doctor.specialisation == spec %}selected{% endif %}>
+                                {{ spec }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email Address</label>
+                        <input type="email" name="email" class="form-control"
+                               value="{{ doctor.email }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Phone Number</label>
+                        <input type="text" name="phone" class="form-control"
+                               value="{{ doctor.phone }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Biography
+                            <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <textarea name="bio" class="form-control" rows="3"
+                                  placeholder="Brief professional biography...">{{ doctor.bio or '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Account Status</label>
+                        <select name="is_active" class="form-control">
+                            <option value="1" {% if doctor.is_active %}selected{% endif %}>Active — Doctor can login</option>
+                            <option value="0" {% if not doctor.is_active %}selected{% endif %}>Inactive — Doctor cannot login</option>
+                        </select>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            New Password
+                            <span class="text-muted fw-normal">(leave blank to keep current)</span>
+                        </label>
+                        <input type="password" name="new_password" class="form-control"
+                               placeholder="Enter new password">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control"
+                               placeholder="Repeat new password">
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

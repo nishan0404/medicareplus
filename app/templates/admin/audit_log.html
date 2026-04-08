@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-shield-alt me-2"></i>Audit Log
+        </h2>
+        <p class="text-muted">Complete record of all system actions</p>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/dashboard" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="card mb-4">
+    <div class="card-body">
+        <strong>Total Events Logged:</strong>
+        <span class="badge bg-primary ms-2">{{ logs|length }}</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>System Events
+            <span class="badge bg-danger ms-2">Read Only</span>
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Timestamp</th>
+                        <th>User ID</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                        <th>Record ID</th>
+                        <th>Table</th>
+                        <th>IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.id }}</td>
+                        <td>
+                            <small>
+                                {{ log.event_timestamp.strftime('%d %b %Y %H:%M:%S') }}
+                            </small>
+                        </td>
+                        <td>{{ log.user_id }}</td>
+                        <td>
+                            <span class="badge
+                                {% if log.user_role == 'admin' %}bg-danger
+                                {% elif log.user_role == 'doctor' %}bg-success
+                                {% else %}bg-primary{% endif %}">
+                                {{ log.user_role }}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="fw-bold">{{ log.action_type }}</small>
+                        </td>
+                        <td>{{ log.affected_record_id or '-' }}</td>
+                        <td><small>{{ log.affected_table or '-' }}</small></td>
+                        <td><small>{{ log.ip_address }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shield-alt fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">No audit events recorded yet</h5>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-stethoscope me-2"></i>
+            Good day, {{ current_user.full_name }}!
+        </h2>
+        <p class="text-muted">
+            <i class="fas fa-calendar me-1"></i>{{ today }}
+        </p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body">
+                <i class="fas fa-calendar-day fa-3x text-primary mb-3"></i>
+                <h3 class="fw-bold">{{ total_today }}</h3>
+                <p class="text-muted mb-0">Total Today</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                <h3 class="fw-bold">{{ upcoming_today }}</h3>
+                <p class="text-muted mb-0">Upcoming</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center p-3">
+            <div class="card-body">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h3 class="fw-bold">{{ completed_today }}</h3>
+                <p class="text-muted mb-0">Completed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-0" id="apptTabs">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#today-tab">
+            <i class="fas fa-calendar-day me-1"></i>Today
+            <span class="badge bg-primary ms-1">{{ appointments|length }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#upcoming-tab">
+            <i class="fas fa-calendar-week me-1"></i>Next 7 Days
+            {% if upcoming_appts %}
+            <span class="badge bg-warning text-dark ms-1">{{ upcoming_appts|length }}</span>
+            {% endif %}
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+<div class="tab-pane fade show active" id="today-tab">
+
+<!-- Today's Appointments -->
+<div class="card" style="border-radius:0 0 16px 16px;">
+    <div class="card-header" style="border-radius:0;">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>Today's Appointments
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if appointments %}
+            {% for appt in appointments %}
+            <div class="border-bottom p-4">
+                <div class="row align-items-center">
+
+                    <!-- Time -->
+                    <div class="col-md-2">
+                        <h5 class="fw-bold text-primary mb-0">
+                            {{ appt.appointment_time.strftime('%I:%M %p') }}
+                        </h5>
+                    </div>
+
+                    <!-- Patient Info -->
+                    <div class="col-md-3">
+                        <h6 class="fw-bold mb-1">{{ appt.patient.full_name }}</h6>
+                        <small class="text-muted">
+                            <i class="fas fa-birthday-cake me-1"></i>
+                            {{ appt.patient.date_of_birth }}
+                        </small>
+                        <!-- Pulsing badge when patient is already waiting on a call -->
+                        {% if appt.call_session and appt.call_session.status == 'waiting' %}
+                        <div class="mt-1">
+                            <span class="badge bg-danger waiting-pulse">
+                                <i class="fas fa-phone me-1"></i>
+                                Patient waiting — {{ appt.call_session.call_type }} call
+                            </span>
+                        </div>
+                        {% endif %}
+                        <!-- Pulsing badge when patient is in chat -->
+                        {% if chat_available and chat_available[appt.id] %}
+                        <div class="mt-1">
+                            <span class="badge bg-purple" style="background:#7c3aed!important;">
+                                <i class="fas fa-comments me-1"></i>Chat open
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="col-md-2">
+                        <small class="text-muted">Reason</small>
+                        <p class="mb-0">{{ appt.reason if appt.reason else 'Not specified' }}</p>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-1">
+                        {% if appt.status == 'Upcoming' %}
+                            <span class="badge bg-primary">Upcoming</span>
+                        {% elif appt.status == 'In-Progress' %}
+                            <span class="badge bg-warning">In Progress</span>
+                        {% elif appt.status == 'Completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif appt.status == 'No-Show' %}
+                            <span class="badge bg-secondary">No Show</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="col-md-4 text-end">
+                        <div class="d-flex flex-column gap-1">
+
+                            <!-- View History (always shown) -->
+                            <a href="/doctor/patient/{{ appt.patient_id }}/history"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-history me-1"></i>History
+                            </a>
+
+                            {% if appt.status in ['Upcoming', 'In-Progress'] %}
+
+                                {# ── Chat button: opens 30 min before appointment ── #}
+                                {% if chat_available and chat_available[appt.id] %}
+                                <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
+                                   class="btn btn-sm text-white"
+                                   style="background:#7c3aed; border:none;">
+                                    <i class="fas fa-comments me-1"></i>Open Chat
+                                </a>
+                                {% endif %}
+
+                                {# ── Call buttons: only at appointment time ── #}
+                                {% if call_available and call_available[appt.id] %}
+
+                                    {% if appt.call_session and appt.call_session.status == 'waiting' %}
+                                    <!-- Patient already started — doctor joins -->
+                                    <a href="{{ url_for('appointment.doctor_join_call', appointment_id=appt.id) }}"
+                                       class="btn btn-success btn-sm">
+                                        <i class="fas fa-{% if appt.call_session.call_type == 'video' %}video{% else %}phone{% endif %} me-1"></i>
+                                        Join {{ appt.call_session.call_type | capitalize }} Call
+                                    </a>
+
+                                    {% elif appt.call_session and appt.call_session.status == 'active' %}
+                                    <!-- Rejoin ongoing call -->
+                                    <a href="{{ url_for('call.room', room_id=appt.call_session.room_id) }}"
+                                       class="btn btn-warning btn-sm">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Rejoin Call
+                                    </a>
+
+                                    {% else %}
+                                    <!-- No call yet — doctor can start -->
+                                    <a href="{{ url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='audio') }}"
+                                       class="btn btn-success btn-sm"
+                                       onclick="return confirm('Start an audio call with {{ appt.patient.full_name }}?')">
+                                        <i class="fas fa-phone me-1"></i>Audio Call
+                                    </a>
+                                    <a href="{{ url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='video') }}"
+                                       class="btn btn-info btn-sm text-white"
+                                       onclick="return confirm('Start a video call with {{ appt.patient.full_name }}?')">
+                                        <i class="fas fa-video me-1"></i>Video Call
+                                    </a>
+                                    {% endif %}
+
+                                {% else %}
+                                <!-- Not yet time for call -->
+                                <small class="text-muted">
+                                    <i class="fas fa-hourglass-half me-1"></i>
+                                    Call available at {{ appt.appointment_time.strftime('%I:%M %p') }}
+                                </small>
+                                {% endif %}
+
+                            {% endif %}
+
+                            <!-- Start / Notes / Prescribe buttons -->
+                            {% if appt.status == 'Upcoming' %}
+                            <form method="POST" action="/doctor/appointment/{{ appt.id }}/status">
+                                <input type="hidden" name="status" value="In-Progress">
+                                <button type="submit" class="btn btn-warning btn-sm w-100">
+                                    <i class="fas fa-play me-1"></i>Start
+                                </button>
+                            </form>
+                            {% elif appt.status == 'In-Progress' %}
+                            <a href="/doctor/appointment/{{ appt.id }}/notes"
+                               class="btn btn-success btn-sm">
+                                <i class="fas fa-notes-medical me-1"></i>Write Notes
+                            </a>
+                            <a href="/doctor/appointment/{{ appt.id }}/prescriptions"
+                               class="btn btn-info btn-sm">
+                                <i class="fas fa-pills me-1"></i>Prescribe
+                            </a>
+                            {% endif %}
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-check fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">No appointments scheduled for today</h5>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+</div><!-- end today-tab -->
+
+<!-- Next 7 Days Tab -->
+<div class="tab-pane fade" id="upcoming-tab">
+<div class="card" style="border-radius:0 0 16px 16px;">
+    <div class="card-header" style="border-radius:0;">
+        <h5 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Upcoming — Next 7 Days</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if upcoming_appts %}
+            {% set last_date = namespace(value=None) %}
+            {% for appt in upcoming_appts %}
+                {% if appt.appointment_date != last_date.value %}
+                    {% set last_date.value = appt.appointment_date %}
+                    <div class="px-4 py-2" style="background:#f0f4f8; font-size:12px; font-weight:600; color:#1A5276; border-bottom:1px solid #e2e8f0;">
+                        <i class="fas fa-calendar me-1"></i>{{ appt.appointment_date.strftime('%A, %d %B %Y') }}
+                    </div>
+                {% endif %}
+                <div class="border-bottom px-4 py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <strong>{{ appt.appointment_time.strftime('%I:%M %p') }}</strong>
+                        &nbsp;·&nbsp;
+                        <span class="fw-semibold">{{ appt.patient.full_name }}</span>
+                        <small class="text-muted ms-2">{{ appt.reason or 'No reason given' }}</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/doctor/patient/{{ appt.patient_id }}/history"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-history me-1"></i>History
+                        </a>
+                        <span class="badge bg-primary align-self-center">Upcoming</span>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">No appointments in the next 7 days</h6>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div><!-- end upcoming-tab -->
+</div><!-- end tab-content -->
+
+<style>
+@keyframes pulse {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+.waiting-pulse { animation: pulse 1.2s infinite; }
+</style>
+
+{% endblock %}

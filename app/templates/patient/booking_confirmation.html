@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+
+        <!-- Success Banner -->
+        <div class="text-center mb-4">
+            <div style="width:72px;height:72px;background:#EAFAF1;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <i class="fas fa-check-circle text-success fa-2x"></i>
+            </div>
+            <h2 class="fw-bold" style="color:#1A5276;">Booking Confirmed!</h2>
+            <p class="text-muted">Your appointment has been booked and payment received.</p>
+        </div>
+
+        <!-- Receipt Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Payment Receipt</h5>
+                <span class="badge bg-success">Paid</span>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- Doctor info -->
+                <div class="d-flex align-items-center gap-3 mb-4 pb-3" style="border-bottom:1px solid #EEF2F7;">
+                    <div style="width:52px;height:52px;background:#EAFAF1;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-user-md text-success fa-lg"></i>
+                    </div>
+                    <div>
+                        <p class="fw-bold mb-0">{{ appt.doctor.full_name }}</p>
+                        <small class="text-muted">{{ appt.doctor.specialisation }}</small>
+                    </div>
+                </div>
+
+                <!-- Appointment details -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Date</small>
+                        <strong>{{ appt.appointment_date.strftime('%A, %d %b %Y') }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Time</small>
+                        <strong>{{ appt.appointment_time.strftime('%I:%M %p') }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Patient</small>
+                        <strong>{{ appt.patient.full_name }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Status</small>
+                        <span class="badge bg-primary">Upcoming</span>
+                    </div>
+                    {% if appt.reason %}
+                    <div class="col-12">
+                        <small class="text-muted d-block">Reason for Visit</small>
+                        <strong>{{ appt.reason }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Payment summary -->
+                <div style="background:#F8FAFC;border-radius:8px;padding:16px;" class="mb-4">
+                    <div class="d-flex justify-content-between mb-2" style="font-size:0.875rem;">
+                        <span class="text-muted">Consultation fee</span>
+                        <span>${{ "%.2f"|format(fee) }} AUD</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" style="font-size:0.875rem;">
+                        <span class="text-muted">Payment method</span>
+                        <span>Card (Stripe)</span>
+                    </div>
+                    {% if appt.payment_intent_id %}
+                    <div class="d-flex justify-content-between" style="font-size:0.78rem;">
+                        <span class="text-muted">Transaction ID</span>
+                        <span style="font-family:monospace;font-size:0.72rem;color:#6B7C93;">
+                            {{ appt.payment_intent_id[:20] }}...
+                        </span>
+                    </div>
+                    {% endif %}
+                    <hr style="margin:12px 0;">
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total paid</span>
+                        <span class="text-success">${{ "%.2f"|format(fee) }} AUD</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-3">
+                    <a href="/patient/appointments" class="btn btn-primary">
+                        <i class="fas fa-calendar me-2"></i>View My Appointments
+                    </a>
+                    <a href="/patient/dashboard" class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>Dashboard
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <p class="text-center text-muted" style="font-size:0.8rem;">
+            <i class="fas fa-envelope me-1"></i>
+            A confirmation has been sent to <strong>{{ appt.patient.email }}</strong>
+        </p>
+
+    </div>
+</div>
+
+{% endblock %}

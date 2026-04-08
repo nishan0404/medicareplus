@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold" style="color:#1A5276;">
+            <i class="fas fa-user-plus me-2"></i>Add New Doctor
+        </h2>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/doctors" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Doctor Details</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="/admin/doctors/add">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Full Name</label>
+                        <input type="text" name="full_name" class="form-control"
+                               placeholder="e.g. Dr. John Smith" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Specialisation</label>
+                        <select name="specialisation" class="form-control" required>
+                            <option value="">Select specialisation</option>
+                            <option>General Practice</option>
+                            <option>Cardiology</option>
+                            <option>Dermatology</option>
+                            <option>Paediatrics</option>
+                            <option>Psychiatry</option>
+                            <option>Orthopaedics</option>
+                            <option>Neurology</option>
+                            <option>Oncology</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email Address</label>
+                        <input type="email" name="email" class="form-control"
+                               placeholder="doctor@clinic.com" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Phone Number</label>
+                        <input type="text" name="phone" class="form-control"
+                               placeholder="0399887766" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Biography
+                            <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <textarea name="bio" class="form-control" rows="3"
+                                  placeholder="Brief professional biography..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Temporary Password</label>
+                        <input type="text" name="password" class="form-control"
+                               placeholder="Set a temporary password" required>
+                        <small class="text-muted">
+                            Doctor must change this on first login
+                        </small>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Add Doctor
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

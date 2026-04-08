@@ -1,0 +1,437 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  #call-container { max-width: 960px; margin: 0 auto; }
+  .video-wrapper {
+    position: relative; background: #1a1a2e; border-radius: 12px;
+    overflow: hidden; aspect-ratio: 16/9; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .video-wrapper video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .video-label {
+    position: absolute; bottom: 10px; left: 12px;
+    background: rgba(0,0,0,.55); color: #fff; font-size: .75rem;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  #local-wrapper {
+    width: 200px; aspect-ratio: 4/3; position: absolute;
+    bottom: 16px; right: 16px; border: 2px solid #0ea5e9;
+    border-radius: 10px; overflow: hidden; background: #0f172a; z-index: 10;
+  }
+  #local-wrapper video { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-placeholder {
+    width: 90px; height: 90px; border-radius: 50%; background: #1e3a5f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; color: #7eb8d4; margin: 0 auto 12px;
+  }
+  #controls {
+    display: flex; justify-content: center; gap: 14px;
+    padding: 14px 0; flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    width: 56px; height: 56px; border-radius: 50%; border: none;
+    font-size: 1.2rem; cursor: pointer; transition: transform .15s, opacity .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ctrl-btn:hover { transform: scale(1.1); }
+  .ctrl-btn.off { opacity: .5; }
+  #btn-end  { width: 68px; height: 68px; font-size: 1.4rem; background: #dc2626; color: #fff; }
+  #btn-mic  { background: #e2e8f0; color: #1e293b; }
+  #btn-cam  { background: #e2e8f0; color: #1e293b; }
+  #btn-flip { background: #e2e8f0; color: #1e293b; }
+  #call-status { font-size: .82rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  #call-timer  { font-variant-numeric: tabular-nums; font-size: 1.05rem; color: #64748b; }
+
+  #safari-unlock {
+    display: none; position: fixed; inset: 0; z-index: 99999;
+    background: rgba(26,82,118,0.97);
+    flex-direction: column; align-items: center; justify-content: center;
+    color: white; text-align: center; padding: 30px;
+  }
+  #safari-unlock h4 { font-weight: 700; margin-bottom: 12px; }
+  #safari-unlock p  { opacity: .85; margin-bottom: 24px; }
+  #safari-unlock button {
+    background: #1A8A4A; color: white; border: none;
+    padding: 16px 40px; border-radius: 50px; font-size: 1.1rem;
+    font-weight: 700; cursor: pointer;
+  }
+</style>
+
+<!-- Safari iOS audio unlock overlay -->
+<div id="safari-unlock">
+  <div class="avatar-placeholder mx-auto mb-3">
+    <i class="fas fa-volume-up"></i>
+  </div>
+  <h4>Tap to hear the call</h4>
+  <p>Safari requires a tap to enable audio.<br>Tap the button below to start hearing.</p>
+  <button onclick="unlockSafariAudio()">
+    <i class="fas fa-phone me-2"></i>Start Hearing
+  </button>
+</div>
+
+<div id="call-container" class="py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h5 class="fw-bold mb-0" style="color:#1A5276;">
+        {% if call.call_type == 'video' %}
+          <i class="fas fa-video me-2"></i>Video Consultation
+        {% else %}
+          <i class="fas fa-phone me-2"></i>Audio Consultation
+        {% endif %}
+      </h5>
+      <small class="text-muted">
+        with
+        {% if user_role == 'patient' %}
+          <strong>{{ appt.doctor.full_name }}</strong> · {{ appt.doctor.specialisation }}
+        {% else %}
+          <strong>{{ appt.patient.full_name }}</strong>
+        {% endif %}
+        &nbsp;·&nbsp;
+        {{ appt.appointment_date.strftime('%d %b %Y') }}
+        {{ appt.appointment_time.strftime('%I:%M %p') }}
+      </small>
+    </div>
+    <div class="text-end">
+      <span id="call-status" class="badge bg-warning text-dark">Waiting…</span>
+      <div id="call-timer" class="mt-1 d-none">00:00</div>
+    </div>
+  </div>
+
+  <!-- VIDEO area -->
+  {% if call.call_type == 'video' %}
+  <div class="position-relative mb-3">
+    <div class="video-wrapper" id="remote-wrapper">
+      <div id="remote-placeholder" class="text-center text-white">
+        <div class="avatar-placeholder mx-auto">
+          <i class="fas fa-user-md"></i>
+        </div>
+        <p class="mb-0 text-secondary small">Waiting for the other party to join…</p>
+      </div>
+      <video id="remote-video" autoplay playsinline class="d-none"></video>
+      <span class="video-label">
+        {% if user_role == 'patient' %}{{ appt.doctor.full_name }}{% else %}{{ appt.patient.full_name }}{% endif %}
+      </span>
+    </div>
+    <div id="local-wrapper">
+      <video id="local-video" autoplay playsinline muted></video>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- AUDIO only -->
+  <div class="card mb-3 border-0 shadow-sm text-center py-5"
+       style="background:linear-gradient(135deg,#1e3a5f,#1A5276);">
+    <div class="avatar-placeholder mx-auto">
+      <i class="fas {% if user_role == 'patient' %}fa-user-md{% else %}fa-user{% endif %}"></i>
+    </div>
+    <h5 class="text-white fw-bold mb-1">
+      {% if user_role == 'patient' %}{{ appt.doctor.full_name }}{% else %}{{ appt.patient.full_name }}{% endif %}
+    </h5>
+    <p class="text-secondary mb-0" id="audio-status-text">Waiting for other party…</p>
+    <audio id="remote-audio" playsinline></audio>
+  </div>
+  {% endif %}
+
+  <!-- CONTROLS -->
+  <div id="controls">
+    <button class="ctrl-btn" id="btn-mic" onclick="toggleMic()" title="Mute / Unmute">
+      <i class="fas fa-microphone" id="mic-icon"></i>
+    </button>
+    {% if call.call_type == 'video' %}
+    <button class="ctrl-btn" id="btn-cam" onclick="toggleCam()" title="Camera on / off">
+      <i class="fas fa-video" id="cam-icon"></i>
+    </button>
+    <button class="ctrl-btn" id="btn-flip" onclick="flipCamera()" title="Flip camera">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+    {% endif %}
+    <button class="ctrl-btn" id="btn-end" onclick="endCall()" title="End call">
+      <i class="fas fa-phone-slash"></i>
+    </button>
+  </div>
+
+  <div class="text-center mt-1">
+    <small id="peer-muted-msg" class="text-danger d-none">
+      <i class="fas fa-microphone-slash me-1"></i>Other party muted
+    </small>
+    <small id="peer-nocam-msg" class="text-warning d-none ms-3">
+      <i class="fas fa-video-slash me-1"></i>Other party camera off
+    </small>
+  </div>
+
+</div>
+
+<form id="end-form" method="POST" action="{{ url_for('call.end_call', room_id=room_id) }}" class="d-none"></form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const ROOM_ID   = "{{ room_id }}";
+const CALL_TYPE = "{{ call.call_type }}";
+const USER_ROLE = "{{ user_role }}";
+const IS_VIDEO  = CALL_TYPE === 'video';
+
+/* ── Detect Safari iOS ── */
+const IS_IOS       = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const IS_SAFARI    = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const NEEDS_UNLOCK = IS_IOS || IS_SAFARI;
+
+/* ── Free unlimited TURN servers (Open Relay) + Google STUN ── */
+const ICE_SERVERS = {
+  iceServers: [
+    /* STUN — Google (free, unlimited, highly reliable) */
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+
+    /* TURN — Open Relay (free, unlimited) */
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:80?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turns:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ]
+};
+
+let localStream    = null;
+let peerConn       = null;
+let micEnabled     = true;
+let camEnabled     = true;
+let facingMode     = 'user';
+let timerInterval  = null;
+let secondsElapsed = 0;
+let pendingStream  = null;
+
+const socket = io('/call', { transports: ['websocket', 'polling'] });
+
+/* ── Show Safari unlock if needed ── */
+if (NEEDS_UNLOCK) {
+  document.getElementById('safari-unlock').style.display = 'flex';
+}
+
+/* ── Safari unlock ── */
+function unlockSafariAudio() {
+  if (IS_VIDEO) {
+    const v = document.getElementById('remote-video');
+    v.muted = false;
+    if (pendingStream) { v.srcObject = pendingStream; v.play().catch(() => {}); }
+  } else {
+    const a = document.getElementById('remote-audio');
+    a.muted = false;
+    if (pendingStream) { a.srcObject = pendingStream; a.play().catch(() => {}); }
+  }
+  document.getElementById('safari-unlock').style.display = 'none';
+}
+
+/* ── Get media + join room ── */
+window.addEventListener('load', async () => {
+  try {
+    const constraints = IS_VIDEO
+      ? { audio: true, video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } }
+      : { audio: { echoCancellation: true, noiseSuppression: true }, video: false };
+
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    if (IS_VIDEO) {
+      document.getElementById('local-video').srcObject = localStream;
+    }
+
+    socket.emit('join', { room_id: ROOM_ID, user_role: USER_ROLE });
+
+  } catch (err) {
+    alert('Could not access microphone' + (IS_VIDEO ? '/camera' : '') +
+          '.\n\nPlease allow permissions and try again.\n\n' + err.message);
+  }
+});
+
+/* ── SocketIO events ── */
+socket.on('peer_joined', async () => {
+  setStatus('Connected', 'success');
+  startTimer();
+  updateAudioStatusText('Connected — call in progress');
+
+  if (USER_ROLE === 'patient') {
+    await createPeerConnection();
+    const offer = await peerConn.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: IS_VIDEO
+    });
+    await peerConn.setLocalDescription(offer);
+    socket.emit('offer', { room_id: ROOM_ID, sdp: offer });
+  }
+});
+
+socket.on('offer', async ({ sdp }) => {
+  await createPeerConnection();
+  await peerConn.setRemoteDescription(new RTCSessionDescription(sdp));
+  const answer = await peerConn.createAnswer();
+  await peerConn.setLocalDescription(answer);
+  socket.emit('answer', { room_id: ROOM_ID, sdp: answer });
+  setStatus('Connected', 'success');
+  startTimer();
+  updateAudioStatusText('Connected — call in progress');
+});
+
+socket.on('answer', async ({ sdp }) => {
+  if (peerConn) await peerConn.setRemoteDescription(new RTCSessionDescription(sdp));
+});
+
+socket.on('ice_candidate', async ({ candidate }) => {
+  if (peerConn && candidate) {
+    try { await peerConn.addIceCandidate(new RTCIceCandidate(candidate)); }
+    catch (e) {}
+  }
+});
+
+socket.on('call_ended', () => {
+  alert('The other party has ended the call.');
+  document.getElementById('end-form').submit();
+});
+
+socket.on('peer_media_toggle', ({ type, enabled }) => {
+  if (type === 'audio') document.getElementById('peer-muted-msg').classList.toggle('d-none', enabled);
+  if (type === 'video') document.getElementById('peer-nocam-msg').classList.toggle('d-none', enabled);
+});
+
+/* ── WebRTC ── */
+async function createPeerConnection() {
+  peerConn = new RTCPeerConnection(ICE_SERVERS);
+
+  localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
+
+  peerConn.onicecandidate = ({ candidate }) => {
+    if (candidate) socket.emit('ice_candidate', { room_id: ROOM_ID, candidate });
+  };
+
+  peerConn.oniceconnectionstatechange = () => {
+    console.log('ICE:', peerConn.iceConnectionState);
+    if (peerConn.iceConnectionState === 'failed') {
+      console.log('ICE failed — restarting...');
+      peerConn.restartIce();
+    }
+  };
+
+  peerConn.ontrack = (event) => {
+    const stream = event.streams[0];
+    pendingStream = stream;
+
+    if (IS_VIDEO) {
+      const remoteVideo = document.getElementById('remote-video');
+      remoteVideo.srcObject = stream;
+      remoteVideo.classList.remove('d-none');
+      document.getElementById('remote-placeholder').classList.add('d-none');
+      if (!NEEDS_UNLOCK) {
+        remoteVideo.muted = false;
+        remoteVideo.play().catch(() => {});
+      }
+    } else {
+      const remoteAudio = document.getElementById('remote-audio');
+      if (!NEEDS_UNLOCK) {
+        remoteAudio.muted = false;
+        remoteAudio.srcObject = stream;
+        remoteAudio.play().catch(() => {});
+      }
+    }
+  };
+
+  peerConn.onconnectionstatechange = () => {
+    console.log('Connection:', peerConn.connectionState);
+    if (['disconnected', 'failed', 'closed'].includes(peerConn.connectionState)) {
+      setStatus('Disconnected', 'danger');
+      stopTimer();
+    }
+  };
+}
+
+/* ── Controls ── */
+function toggleMic() {
+  micEnabled = !micEnabled;
+  localStream.getAudioTracks().forEach(t => t.enabled = micEnabled);
+  document.getElementById('mic-icon').className = micEnabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+  document.getElementById('btn-mic').classList.toggle('off', !micEnabled);
+  socket.emit('toggle_media', { room_id: ROOM_ID, type: 'audio', enabled: micEnabled });
+}
+
+function toggleCam() {
+  camEnabled = !camEnabled;
+  localStream.getVideoTracks().forEach(t => t.enabled = camEnabled);
+  document.getElementById('cam-icon').className = camEnabled ? 'fas fa-video' : 'fas fa-video-slash';
+  document.getElementById('btn-cam').classList.toggle('off', !camEnabled);
+  socket.emit('toggle_media', { room_id: ROOM_ID, type: 'video', enabled: camEnabled });
+}
+
+async function flipCamera() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  const newStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode } });
+  const newVideoTrack = newStream.getVideoTracks()[0];
+  const sender = peerConn?.getSenders().find(s => s.track?.kind === 'video');
+  if (sender) sender.replaceTrack(newVideoTrack);
+  localStream.getVideoTracks()[0].stop();
+  document.getElementById('local-video').srcObject = newStream;
+  localStream = newStream;
+}
+
+function endCall() {
+  if (!confirm('Are you sure you want to end this call?')) return;
+  socket.emit('end_call', { room_id: ROOM_ID });
+  stopTimer();
+  document.getElementById('end-form').submit();
+}
+
+function startTimer() {
+  const el = document.getElementById('call-timer');
+  if (!el || timerInterval) return;
+  el.classList.remove('d-none');
+  timerInterval = setInterval(() => {
+    secondsElapsed++;
+    const m = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+    const s = String(secondsElapsed % 60).padStart(2, '0');
+    el.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopTimer() { clearInterval(timerInterval); }
+
+function setStatus(text, colour) {
+  const el = document.getElementById('call-status');
+  el.textContent = text;
+  el.className = `badge bg-${colour}${colour === 'warning' ? ' text-dark' : ''}`;
+}
+
+function updateAudioStatusText(text) {
+  const el = document.getElementById('audio-status-text');
+  if (el) el.textContent = text;
+}
+
+window.addEventListener('beforeunload', e => {
+  if (peerConn && peerConn.connectionState === 'connected') {
+    e.preventDefault(); e.returnValue = '';
+  }
+});
+</script>
+
+{% endblock %}

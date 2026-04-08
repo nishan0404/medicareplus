@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header text-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Create Your Account
+                </h3>
+                <p class="mb-0 mt-1 opacity-75">Join MediCare+ today</p>
+            </div>
+            <div class="card-body p-4">
+
+                <form method="POST" action="/register" id="registerForm">
+
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-user me-1 text-success"></i>Full Name
+                        </label>
+                        <input type="text" name="full_name" class="form-control"
+                               placeholder="Enter your full name" required>
+                    </div>
+
+                    <!-- Date of Birth -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-calendar me-1 text-success"></i>Date of Birth
+                        </label>
+                        <input type="date" name="date_of_birth" class="form-control" required>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-envelope me-1 text-success"></i>Email Address
+                        </label>
+                        <input type="email" name="email" class="form-control"
+                               placeholder="Enter your email" required>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-phone me-1 text-success"></i>Phone Number
+                        </label>
+                        <input type="text" name="phone" class="form-control"
+                               placeholder="e.g. 0412345678" required>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-lock me-1 text-success"></i>Password
+                        </label>
+                        <div class="input-group">
+                            <input type="password" name="password" id="password"
+                                   class="form-control" placeholder="Create a strong password" required>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="togglePassword('password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <!-- Strength Bar -->
+                        <div class="mt-2">
+                            <div class="bg-light rounded" style="height:4px;">
+                                <div id="strengthBar" class="strength-bar"></div>
+                            </div>
+                            <small id="strengthText" class="text-muted"></small>
+                        </div>
+                        <small class="text-muted">
+                            Minimum 8 characters with at least one number and one special character
+                        </small>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-lock me-1 text-success"></i>Confirm Password
+                        </label>
+                        <div class="input-group">
+                            <input type="password" name="confirm_password" id="confirm_password"
+                                   class="form-control" placeholder="Repeat your password" required>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="togglePassword('confirm_password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small id="matchText" class="text-muted"></small>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+                    </div>
+
+                </form>
+
+                <hr class="my-4">
+                <p class="text-center mb-0">
+                    Already have an account?
+                    <a href="/login" class="text-success fw-bold">Login here</a>
+                </p>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show/hide password
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    field.type = field.type === 'password' ? 'text' : 'password';
+}
+
+// Password strength checker
+document.getElementById('password').addEventListener('input', function() {
+    const val = this.value;
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+
+    bar.className = 'strength-bar';
+
+    if (val.length === 0) {
+        text.textContent = '';
+        bar.style.width = '0';
+    } else if (val.length < 6) {
+        bar.classList.add('strength-weak');
+        text.textContent = 'Weak';
+        text.className = 'text-danger';
+    } else if (val.length < 10 || !/[0-9]/.test(val) || !/[^a-zA-Z0-9]/.test(val)) {
+        bar.classList.add('strength-medium');
+        text.textContent = 'Medium';
+        text.className = 'text-warning';
+    } else {
+        bar.classList.add('strength-strong');
+        text.textContent = 'Strong ✓';
+        text.className = 'text-success';
+    }
+});
+
+// Password match checker
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const pass = document.getElementById('password').value;
+    const text = document.getElementById('matchText');
+    if (this.value === pass) {
+        text.textContent = '✓ Passwords match';
+        text.className = 'text-success';
+    } else {
+        text.textContent = '✗ Passwords do not match';
+        text.className = 'text-danger';
+    }
+});
+</script>
+{% endblock %}
