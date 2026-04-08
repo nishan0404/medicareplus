@@ -39,7 +39,6 @@ def create_app():
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
         'pool_recycle':  1800,
-        'connect_args':  {'options': '-c statement_timeout=30000'},
     }
 
     # ── Session security ──
