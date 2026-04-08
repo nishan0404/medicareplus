@@ -1,1 +1,1 @@
-web: gunicorn -c gunicorn.conf.py run:app
+web: gunicorn --worker-class gevent -w 1 --bind 0.0.0.0:10000 run:app
