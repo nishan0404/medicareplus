@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -32,8 +35,8 @@ def create_app():
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_pre_ping': True,       # reconnect on stale connections
-        'pool_recycle':  1800,       # recycle connections every 30 min
+        'pool_pre_ping': True,
+        'pool_recycle':  1800,
     }
 
     # ── Session security ──
@@ -73,7 +76,7 @@ def create_app():
             Doctor, ConsultationNote, Prescription,
             Admin, SymptomLog, Condition, AuditLog,
             CallSession,
-            ChatMessage, ChatAttachment,          # ← chat tables
+            ChatMessage, ChatAttachment,
         )
 
         from app.routes.auth        import auth
@@ -83,7 +86,7 @@ def create_app():
         from app.routes.appointment import appointment
         from app.routes.chatbot     import chatbot
         from app.routes.call        import call,      register_socketio_events
-        from app.routes.chat        import chat as chat_blueprint, register_chat_events   # ← chat blueprint
+        from app.routes.chat        import chat as chat_blueprint, register_chat_events
 
         app.register_blueprint(auth)
         app.register_blueprint(patient)
@@ -92,18 +95,12 @@ def create_app():
         app.register_blueprint(appointment)
         app.register_blueprint(chatbot)
         app.register_blueprint(call)
-        app.register_blueprint(chat_blueprint)    # ← register chat routes
+        app.register_blueprint(chat_blueprint)
 
-        register_socketio_events(socketio)        # ← WebRTC signalling (call)
-        register_chat_events(socketio)            # ← Live chat events
+        register_socketio_events(socketio)
+        register_chat_events(socketio)
 
-        # ── Background scheduler ──
         def auto_expire_appointments():
-            """
-            Mark appointments as No-Show if they are still 'Upcoming'
-            and their date+time passed more than 1 hour ago.
-            Runs every hour and on-demand from dashboards.
-            """
             from datetime import datetime, timedelta, date as date_type, time as time_type
             from app.models import Appointment
 
@@ -111,13 +108,11 @@ def create_app():
             today    = now.date()
             cutoff   = (now - timedelta(hours=1)).time()
 
-            # Past days still Upcoming or In-Progress (doctor forgot to close)
             stale = Appointment.query.filter(
                 Appointment.status.in_(['Upcoming', 'In-Progress']),
                 Appointment.appointment_date < today,
             ).all()
 
-            # Today's appointments whose time passed > 1 hour ago
             stale += Appointment.query.filter(
                 Appointment.status.in_(['Upcoming', 'In-Progress']),
                 Appointment.appointment_date == today,
@@ -129,16 +124,13 @@ def create_app():
             if stale:
                 db.session.commit()
 
-        # Store on app so routes can call it directly
         app.auto_expire_appointments = auto_expire_appointments
 
-        # Run once immediately at startup to clean up stale records
         try:
             auto_expire_appointments()
         except Exception:
             pass
 
-        # Schedule to run every hour
         def _scheduled_job():
             with app.app_context():
                 auto_expire_appointments()
