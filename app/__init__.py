@@ -26,11 +26,7 @@ def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
 
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"mysql+pymysql://{os.getenv('DB_USER')}:"
-        f"{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/"
-        f"{os.getenv('DB_NAME')}"
-    )
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,       # reconnect on stale connections
