@@ -29,14 +29,17 @@ def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
 
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        os.getenv('DATABASE_URL') or
+    _db_url = os.getenv('DATABASE_URL') or \
         f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
-    )
+    # Render/Heroku may supply the legacy "postgres://" prefix — SQLAlchemy 2.x requires "postgresql://"
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
         'pool_recycle':  1800,
+        'connect_args':  {'options': '-c statement_timeout=30000'},
     }
 
     # ── Session security ──
