@@ -236,9 +236,10 @@ def my_appointments():
 
     today = date.today()
 
-    upcoming = Appointment.query.filter_by(
-        patient_id=current_user.id, status='Upcoming'
-    ).order_by(Appointment.appointment_date.asc()).all()
+    upcoming = Appointment.query.filter(
+        Appointment.patient_id == current_user.id,
+        Appointment.status.in_(['Upcoming', 'In-Progress'])
+    ).order_by(Appointment.appointment_date.asc(), Appointment.appointment_time.asc()).all()
 
     past = Appointment.query.filter_by(
         patient_id=current_user.id

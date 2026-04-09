@@ -58,7 +58,7 @@ def room(appointment_id):
         return redirect(url_for('appointment.my_appointments'))
 
     if not is_chat_open(appt):
-        flash('The chat room is not open yet. It opens 30 minutes before your appointment.', 'info')
+        flash('This chat room is not available for that appointment.', 'info')
         if user_role == 'doctor':
             return redirect(url_for('doctor.dashboard'))
         return redirect(url_for('appointment.my_appointments'))
@@ -76,7 +76,10 @@ def room(appointment_id):
     room_key = chat_room_key(appointment_id)
 
     from app.routes.appointment import is_call_available
+    from datetime import date
     call_available = is_call_available(appt)
+    # Show voice call in chat header for ANY today's non-cancelled appointment
+    chat_today = (appt.appointment_date == date.today() and appt.status != 'Cancelled')
 
     return render_template('chat/room.html',
         title          = 'Live Chat',
@@ -86,6 +89,7 @@ def room(appointment_id):
         room_key       = room_key,
         chat_open      = True,
         call_available = call_available,
+        chat_today     = chat_today,
     )
 
 

@@ -1,307 +1,288 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="row mb-4">
-    <div class="col">
-        <h2 class="fw-bold" style="color:#1A5276;">
-            <i class="fas fa-calendar me-2"></i>My Appointments
-        </h2>
-        <p class="text-muted">View and manage your appointments</p>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="mc-page-title mb-0"><i class="fas fa-calendar me-2" style="color:#1A5276;"></i>My Appointments</h1>
+        <p class="mc-page-sub">View and manage your appointments</p>
     </div>
-    <div class="col-auto">
-        <a href="/patient/book" class="btn btn-primary me-2">
-            <i class="fas fa-plus me-2"></i>Book New
+    <div class="d-flex gap-2">
+        <a href="/patient/book" class="btn-mc-green" style="text-decoration:none; font-size:.875rem; display:flex; align-items:center; gap:.4rem;">
+            <i class="fas fa-plus"></i> Book New
         </a>
-        <a href="/patient/dashboard" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back
+        <a href="/patient/dashboard" class="btn-mc-outline" style="text-decoration:none; font-size:.875rem; display:flex; align-items:center; gap:.4rem;">
+            <i class="fas fa-arrow-left"></i> Back
         </a>
     </div>
 </div>
 
-<ul class="nav nav-tabs mb-4">
-    <li class="nav-item">
-        <a class="nav-link active" data-bs-toggle="tab" href="#upcoming">
-            <i class="fas fa-clock me-2"></i>Upcoming
-            <span class="badge bg-primary ms-1">{{ upcoming|length }}</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#past">
-            <i class="fas fa-history me-2"></i>Past
-            <span class="badge bg-secondary ms-1">{{ past|length }}</span>
-        </a>
-    </li>
-</ul>
+<!-- Tabs -->
+<div style="display:flex; gap:.5rem; margin-bottom:1.25rem; border-bottom:2px solid #f1f5f9; padding-bottom:0;">
+    <button onclick="switchTab('upcoming', this)"
+            id="tab-upcoming"
+            style="background:none; border:none; padding:.65rem 1.25rem; font-size:.9rem; font-weight:600; color:#1A5276; border-bottom:2px solid #1A5276; margin-bottom:-2px; cursor:pointer;">
+        <i class="fas fa-clock me-1"></i>Upcoming
+        <span style="background:#dbeafe; color:#1e40af; font-size:.72rem; padding:.15rem .5rem; border-radius:20px; margin-left:.35rem;">{{ upcoming|length }}</span>
+    </button>
+    <button onclick="switchTab('past', this)"
+            id="tab-past"
+            style="background:none; border:none; padding:.65rem 1.25rem; font-size:.9rem; font-weight:500; color:#64748b; border-bottom:2px solid transparent; margin-bottom:-2px; cursor:pointer;">
+        <i class="fas fa-history me-1"></i>Past
+        <span style="background:#f1f5f9; color:#64748b; font-size:.72rem; padding:.15rem .5rem; border-radius:20px; margin-left:.35rem;">{{ past|length }}</span>
+    </button>
+</div>
 
-<div class="tab-content">
+<!-- Upcoming Tab -->
+<div id="pane-upcoming">
+    {% if upcoming %}
+        {% for appt in upcoming %}
+        <div class="mc-card mb-3"
+             style="border-color:{% if appt.status == 'In-Progress' %}#fcd34d{% elif appt.appointment_date == today %}#bbf7d0{% else %}#f1f5f9{% endif %};
+                    background:{% if appt.status == 'In-Progress' %}#fffbeb{% elif appt.appointment_date == today %}#f0fdf4{% else %}white{% endif %};">
+            <div class="row align-items-center g-3">
 
-    <!-- Upcoming -->
-    <div class="tab-pane fade show active" id="upcoming">
-        {% if upcoming %}
-            {% for appt in upcoming %}
-            <div class="card mb-3 shadow-sm border-0">
-                <div class="card-body">
-                    <div class="row align-items-center">
+                <!-- Date & Time -->
+                <div class="col-md-2 col-6">
+                    <div style="font-weight:700; color:{% if appt.appointment_date == today %}#1A8A4A{% else %}#1A5276{% endif %}; font-size:.95rem;">
+                        {{ appt.appointment_date.strftime('%d %b %Y') }}
+                    </div>
+                    <div style="font-size:.82rem; color:#64748b;">{{ appt.appointment_time.strftime('%I:%M %p') }}</div>
+                    <div class="d-flex gap-1 flex-wrap mt-1">
+                        {% if appt.appointment_date == today %}
+                        <span style="background:#dcfce7; color:#166534; font-size:.65rem; padding:.15rem .45rem; border-radius:10px; font-weight:700;">TODAY</span>
+                        {% endif %}
+                        {% if appt.status == 'In-Progress' %}
+                        <span style="background:#fef3c7; color:#92400e; font-size:.65rem; padding:.15rem .45rem; border-radius:10px; font-weight:700;">IN PROGRESS</span>
+                        {% endif %}
+                    </div>
+                </div>
 
-                        <div class="col-md-3">
-                            <h6 class="fw-bold {% if appt.appointment_date == today %}text-success{% else %}text-primary{% endif %} mb-1">
-                                <i class="fas fa-calendar me-2"></i>
-                                {{ appt.appointment_date.strftime('%d %B %Y') }}
-                                {% if appt.appointment_date == today %}
-                                    <span class="badge bg-success ms-1" style="font-size:.65rem;">TODAY</span>
-                                {% endif %}
-                            </h6>
-                            <p class="mb-0 text-muted">
-                                <i class="fas fa-clock me-1"></i>
-                                {{ appt.appointment_time.strftime('%I:%M %p') }}
-                            </p>
+                <!-- Doctor -->
+                <div class="col-md-3 col-6">
+                    <div style="display:flex; align-items:center; gap:.6rem;">
+                        <div style="width:36px; height:36px; background:#dbeafe; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i class="fas fa-user-md" style="color:#1A5276; font-size:.8rem;"></i>
                         </div>
-
-                        <div class="col-md-3">
-                            <small class="text-muted">Doctor</small>
-                            <p class="mb-0 fw-bold">{{ appt.doctor.full_name }}</p>
-                            <small class="text-muted">{{ appt.doctor.specialisation }}</small>
+                        <div>
+                            <div style="font-weight:600; color:#0B2545; font-size:.875rem;">{{ appt.doctor.full_name }}</div>
+                            <div style="font-size:.78rem; color:#64748b;">{{ appt.doctor.specialisation }}</div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="col-md-2">
-                            <small class="text-muted">Reason</small>
-                            <p class="mb-0">{{ appt.reason if appt.reason else 'Not specified' }}</p>
-                        </div>
+                <!-- Type & Reason -->
+                <div class="col-md-3 d-none d-md-block">
+                    <div style="font-size:.78rem; color:#64748b; margin-bottom:.25rem;">
+                        <span style="background:#f1f5f9; color:#374151; padding:.15rem .5rem; border-radius:6px; font-size:.75rem;">
+                            {{ appt.appointment_type or 'In-person' }}
+                        </span>
+                    </div>
+                    <div style="font-size:.825rem; color:#374151;">{{ appt.reason or '—' }}</div>
+                </div>
 
-                        <div class="col-md-4 text-end">
-                            <span class="badge bg-primary mb-2 d-block">Upcoming</span>
+                <!-- Actions -->
+                <div class="col-md-4">
+                    <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                        {# ── Doctor waiting on a call ── #}
+                        {% if appt.call_session and appt.call_session.status == 'waiting' and call_available[appt.id] %}
+                        <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type=appt.call_session.call_type) }}"
+                           class="btn-mc-green"
+                           style="font-size:.8rem; text-decoration:none; padding:.4rem .85rem; display:flex; align-items:center; gap:.4rem; animation:pulse 1.2s infinite;">
+                            <i class="fas fa-phone-volume"></i> Doctor Waiting!
+                        </a>
+                        {# ── Active call to rejoin ── #}
+                        {% elif appt.call_session and appt.call_session.status == 'active' and call_available[appt.id] %}
+                        <a href="{{ url_for('call.room', room_id=appt.call_session.room_id) }}"
+                           class="btn-mc-blue"
+                           style="font-size:.8rem; text-decoration:none; padding:.4rem .85rem; display:flex; align-items:center; gap:.4rem;">
+                            <i class="fas fa-sign-in-alt"></i> Rejoin Call
+                        </a>
+                        {# ── Video call available ── #}
+                        {% elif call_available[appt.id] and appt.appointment_type == 'Video Call' %}
+                        <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type='video') }}"
+                           class="btn-mc-blue"
+                           style="font-size:.8rem; text-decoration:none; padding:.4rem .85rem; display:flex; align-items:center; gap:.4rem;"
+                           onclick="return confirm('Start video call with {{ appt.doctor.full_name }}?')">
+                            <i class="fas fa-video"></i> Join Video Call
+                        </a>
+                        {% endif %}
 
-                            {# ── Chat button (opens 30 min before) ── #}
-                            {% if chat_available[appt.id] %}
-                            <div class="mb-2">
-                                <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
-                                   class="btn btn-purple btn-sm w-100"
-                                   style="background:#7c3aed; color:white; border:none;">
-                                    <i class="fas fa-comments me-1"></i>Open Chat
-                                    {% if appt.call_session and appt.call_session.status == 'waiting' %}
-                                        <span class="badge bg-danger ms-1" style="font-size:.65rem;">!</span>
-                                    {% endif %}
-                                </a>
-                            </div>
-                            {% endif %}
+                        {# ── Chat ── #}
+                        <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
+                           class="btn-mc-dark"
+                           style="font-size:.8rem; text-decoration:none; padding:.4rem .85rem; display:flex; align-items:center; gap:.4rem;">
+                            <i class="fas fa-comment-dots"></i> Chat
+                        </a>
 
-                            {# ── Call buttons ── #}
-                            {% if call_available[appt.id] %}
-                                {% if appt.call_session and appt.call_session.status == 'waiting' %}
-                                <div class="alert alert-success py-1 px-2 mb-2 text-center" style="font-size:.8rem;">
-                                    <i class="fas fa-phone-volume me-1"></i>
-                                    <strong>Doctor is waiting!</strong>
-                                </div>
-                                <div class="d-flex justify-content-end gap-2 mb-2">
-                                    <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type=appt.call_session.call_type) }}"
-                                       class="btn btn-success btn-sm">
-                                        <i class="fas fa-{% if appt.call_session.call_type == 'video' %}video{% else %}phone{% endif %} me-1"></i>
-                                        Join {{ appt.call_session.call_type | capitalize }} Call
-                                    </a>
-                                </div>
-                                {% elif appt.call_session and appt.call_session.status == 'active' %}
-                                <div class="d-flex justify-content-end gap-2 mb-2">
-                                    <a href="{{ url_for('call.room', room_id=appt.call_session.room_id) }}"
-                                       class="btn btn-warning btn-sm">
-                                        <i class="fas fa-sign-in-alt me-1"></i>Rejoin Call
-                                    </a>
-                                </div>
-                                {% else %}
-                                <div class="d-flex justify-content-end gap-2 mb-2">
-                                    <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type='audio') }}"
-                                       class="btn btn-success btn-sm"
-                                       onclick="return confirm('Start audio call with {{ appt.doctor.full_name }}?')">
-                                        <i class="fas fa-phone me-1"></i>Audio
-                                    </a>
-                                    <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type='video') }}"
-                                       class="btn btn-info btn-sm text-white"
-                                       onclick="return confirm('Start video call with {{ appt.doctor.full_name }}?')">
-                                        <i class="fas fa-video me-1"></i>Video
-                                    </a>
-                                </div>
-                                {% endif %}
-                            {% elif appt.appointment_date == today %}
-                            <div class="mb-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-hourglass-half me-1"></i>
-                                    Chat & call open at {{ appt.appointment_time.strftime('%I:%M %p') }}
-                                </small>
-                            </div>
-                            {% endif %}
-
-                            <button type="button" class="btn btn-outline-danger btn-sm w-100"
-                                    onclick="openCancelModal({{ appt.id }}, '{{ appt.doctor.full_name }}', '{{ appt.appointment_date.strftime('%d %b %Y') }} {{ appt.appointment_time.strftime('%I:%M %p') }}')">
-                                <i class="fas fa-times me-1"></i>Cancel
-                            </button>
-                        </div>
-
+                        {# ── Cancel ── #}
+                        <button type="button"
+                                onclick="openCancelModal({{ appt.id }}, '{{ appt.doctor.full_name }}', '{{ appt.appointment_date.strftime('%d %b %Y') }} {{ appt.appointment_time.strftime('%I:%M %p') }}')"
+                                style="font-size:.8rem; padding:.4rem .85rem; background:#fee2e2; color:#991b1b; border:none; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:.4rem;">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No upcoming appointments</h5>
-                    <a href="/patient/book" class="btn btn-primary mt-2">
-                        <i class="fas fa-plus me-2"></i>Book an Appointment
-                    </a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="mc-card text-center py-5">
+            <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                <i class="fas fa-calendar-times" style="font-size:1.5rem; color:#94a3b8;"></i>
+            </div>
+            <h6 style="color:#0B2545; font-weight:600;">No upcoming appointments</h6>
+            <p style="font-size:.875rem; color:#64748b; margin-bottom:1rem;">Book an appointment to get started</p>
+            <a href="/patient/book" class="btn-mc-green" style="text-decoration:none; font-size:.875rem;">
+                <i class="fas fa-plus me-1"></i>Book Now
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Past Tab -->
+<div id="pane-past" style="display:none;">
+    {% if past %}
+        {% for appt in past %}
+        <div class="mc-card mb-3">
+            <!-- Header row -->
+            <div class="row align-items-start g-3 mb-2">
+                <div class="col-md-2 col-6">
+                    <div style="font-weight:600; color:#0B2545; font-size:.875rem;">{{ appt.appointment_date.strftime('%d %b %Y') }}</div>
+                    <div style="font-size:.8rem; color:#64748b;">{{ appt.appointment_time.strftime('%I:%M %p') }}</div>
+                    {% if appt.call_session and appt.call_session.duration_secs %}
+                    <div style="font-size:.75rem; color:#9ca3af; margin-top:.2rem;">
+                        <i class="fas fa-phone me-1"></i>{{ (appt.call_session.duration_secs // 60) }}m {{ (appt.call_session.duration_secs % 60) }}s
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 col-6">
+                    <div style="font-weight:600; color:#0B2545; font-size:.875rem;">{{ appt.doctor.full_name }}</div>
+                    <div style="font-size:.78rem; color:#64748b;">{{ appt.doctor.specialisation }}</div>
+                    <div style="font-size:.78rem; color:#9ca3af; margin-top:.2rem;">{{ appt.reason or '—' }}</div>
+                </div>
+                <div class="col-md-3 d-none d-md-block">
+                    <span style="background:#f1f5f9; color:#374151; font-size:.75rem; padding:.2rem .55rem; border-radius:6px;">
+                        {{ appt.appointment_type or 'In-person' }}
+                    </span>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    {% if appt.status == 'Completed' %}
+                        <span style="background:#dcfce7; color:#166534; font-size:.75rem; padding:.25rem .65rem; border-radius:20px; font-weight:600;">Completed</span>
+                    {% elif appt.status == 'Cancelled' %}
+                        <span style="background:#fee2e2; color:#991b1b; font-size:.75rem; padding:.25rem .65rem; border-radius:20px; font-weight:600;">Cancelled</span>
+                    {% elif appt.status == 'No-Show' %}
+                        <span style="background:#fef3c7; color:#92400e; font-size:.75rem; padding:.25rem .65rem; border-radius:20px; font-weight:600;">No-Show</span>
+                    {% endif %}
+                    {% if appt.status == 'Completed' %}
+                    <div class="d-flex gap-1 justify-content-md-end mt-2 flex-wrap">
+                        <a href="/patient/records" style="font-size:.75rem; padding:.25rem .65rem; background:#dbeafe; color:#1e40af; border-radius:6px; text-decoration:none;">
+                            <i class="fas fa-file-medical me-1"></i>Records
+                        </a>
+                        <a href="/patient/records/pdf" style="font-size:.75rem; padding:.25rem .65rem; background:#f1f5f9; color:#374151; border-radius:6px; text-decoration:none;">
+                            <i class="fas fa-download me-1"></i>PDF
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-        {% endif %}
-    </div>
 
-    <!-- Past -->
-    <div class="tab-pane fade" id="past">
-        {% if past %}
-            {% for appt in past %}
-            <div class="card mb-3 shadow-sm border-0">
-                <div class="card-body">
-                    <!-- Top row: date / doctor / reason / status -->
-                    <div class="row align-items-start">
-                        <div class="col-md-3">
-                            <h6 class="fw-bold mb-1">{{ appt.appointment_date.strftime('%d %B %Y') }}</h6>
-                            <p class="mb-0 text-muted">{{ appt.appointment_time.strftime('%I:%M %p') }}</p>
-                            {% if appt.call_session and appt.call_session.duration_secs %}
-                            <small class="text-muted">
-                                <i class="fas fa-phone me-1"></i>
-                                {{ (appt.call_session.duration_secs // 60) }}m {{ (appt.call_session.duration_secs % 60) }}s
-                            </small>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-3">
-                            <small class="text-muted">Doctor</small>
-                            <p class="mb-0 fw-bold">{{ appt.doctor.full_name }}</p>
-                            <small class="text-muted">{{ appt.doctor.specialisation }}</small>
-                        </div>
-                        <div class="col-md-3">
-                            <small class="text-muted">Reason</small>
-                            <p class="mb-0">{{ appt.reason if appt.reason else 'Not specified' }}</p>
-                        </div>
-                        <div class="col-md-3 text-end">
-                            {% if appt.status == 'Completed' %}
-                                <span class="badge bg-success">Completed</span>
-                            {% elif appt.status == 'Cancelled' %}
-                                <span class="badge bg-danger">Cancelled</span>
-                            {% elif appt.status == 'No-Show' %}
-                                <span class="badge bg-warning text-dark">No-Show</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ appt.status }}</span>
-                            {% endif %}
-
-                            {% if appt.status == 'Completed' %}
-                            <div class="mt-2">
-                                <a href="/patient/records" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-file-medical me-1"></i>Records
-                                </a>
-                                <a href="/patient/records/pdf" class="btn btn-outline-secondary btn-sm ms-1">
-                                    <i class="fas fa-download me-1"></i>PDF
-                                </a>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Consultation notes (Completed only) -->
-                    {% if appt.status == 'Completed' and appt.notes and not appt.notes.no_notes_recorded %}
-                    <hr class="my-3">
-                    <div class="row">
+            {% if appt.status == 'Completed' and appt.notes %}
+                {% if not appt.notes.no_notes_recorded %}
+                <div style="border-top:1px solid #f1f5f9; padding-top:.875rem; margin-top:.25rem;">
+                    <div class="row g-3">
                         <div class="col-md-6">
-                            <small class="text-muted fw-bold text-uppercase" style="letter-spacing:.05em;">
+                            <div style="font-size:.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem;">
                                 <i class="fas fa-stethoscope me-1"></i>Diagnosis
-                            </small>
-                            <p class="mb-1 mt-1">{{ appt.notes.diagnosis }}</p>
+                            </div>
+                            <p style="font-size:.875rem; color:#0B2545; margin:0;">{{ appt.notes.diagnosis }}</p>
                             {% if appt.notes.notes %}
-                            <small class="text-muted fw-bold text-uppercase" style="letter-spacing:.05em;">Doctor's Notes</small>
-                            <p class="mb-0 mt-1 text-muted" style="font-size:.9rem;">{{ appt.notes.notes }}</p>
+                            <div style="font-size:.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin:0.6rem 0 .3rem;">Doctor's Notes</div>
+                            <p style="font-size:.82rem; color:#374151; margin:0;">{{ appt.notes.notes }}</p>
                             {% endif %}
                         </div>
                         <div class="col-md-6">
                             {% if appt.notes.follow_up_date %}
-                            <div class="alert alert-warning py-2 px-3 mb-2" style="border-radius:10px;">
-                                <i class="fas fa-calendar-check me-2"></i>
-                                <strong>Follow-up recommended:</strong>
-                                {{ appt.notes.follow_up_date.strftime('%d %B %Y') }}
-                                <a href="/patient/book" class="btn btn-warning btn-sm ms-2 py-0">
-                                    Book Now
-                                </a>
+                            <div style="background:#fef9c3; border-left:3px solid #f59e0b; border-radius:8px; padding:.65rem .875rem; font-size:.82rem; color:#78350f;">
+                                <i class="fas fa-calendar-check me-1"></i>
+                                <strong>Follow-up:</strong> {{ appt.notes.follow_up_date.strftime('%d %B %Y') }}
+                                <a href="/patient/book" style="font-size:.75rem; background:#f59e0b; color:white; border-radius:6px; padding:.15rem .5rem; text-decoration:none; margin-left:.5rem;">Book</a>
                             </div>
                             {% endif %}
                         </div>
                     </div>
-                    {% elif appt.status == 'Completed' and appt.notes and appt.notes.no_notes_recorded %}
-                    <hr class="my-3">
-                    <p class="text-muted mb-0" style="font-size:.9rem;">
-                        <i class="fas fa-info-circle me-1"></i>No consultation notes recorded for this appointment.
-                    </p>
-                    {% endif %}
+                </div>
+                {% else %}
+                <div style="border-top:1px solid #f1f5f9; padding-top:.75rem; margin-top:.25rem; font-size:.82rem; color:#9ca3af;">
+                    <i class="fas fa-info-circle me-1"></i>No consultation notes recorded.
+                </div>
+                {% endif %}
+            {% endif %}
 
-                    <!-- Prescriptions -->
-                    {% if appt.prescriptions %}
-                    <hr class="my-3">
-                    <small class="text-muted fw-bold text-uppercase" style="letter-spacing:.05em;">
-                        <i class="fas fa-pills me-1"></i>Prescriptions ({{ appt.prescriptions|length }})
-                    </small>
-                    <div class="row mt-2 g-2">
-                        {% for rx in appt.prescriptions %}
-                        <div class="col-md-6">
-                            <div class="p-2 rounded" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                                <strong style="font-size:.9rem;">{{ rx.medication_name }}</strong>
-                                <div class="text-muted" style="font-size:.8rem;">
-                                    {{ rx.dosage }} · {{ rx.frequency }} · {{ rx.duration_days }} days
-                                </div>
-                                {% if rx.instructions %}
-                                <div class="text-muted" style="font-size:.8rem; font-style:italic;">{{ rx.instructions }}</div>
-                                {% endif %}
-                            </div>
+            {% if appt.prescriptions %}
+            <div style="border-top:1px solid #f1f5f9; padding-top:.875rem; margin-top:.5rem;">
+                <div style="font-size:.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem;">
+                    <i class="fas fa-pills me-1"></i>Prescriptions ({{ appt.prescriptions|length }})
+                </div>
+                <div class="row g-2">
+                    {% for rx in appt.prescriptions %}
+                    <div class="col-md-6">
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:.65rem .875rem;">
+                            <div style="font-weight:600; font-size:.875rem; color:#0B2545;">{{ rx.medication_name }}</div>
+                            <div style="font-size:.78rem; color:#64748b;">{{ rx.dosage }} · {{ rx.frequency }} · {{ rx.duration_days }} days</div>
+                            {% if rx.instructions %}
+                            <div style="font-size:.78rem; color:#9ca3af; font-style:italic; margin-top:.2rem;">{{ rx.instructions }}</div>
+                            {% endif %}
                         </div>
-                        {% endfor %}
                     </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-history fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No past appointments</h5>
-                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="mc-card text-center py-5">
+            <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                <i class="fas fa-history" style="font-size:1.5rem; color:#94a3b8;"></i>
             </div>
-        {% endif %}
-    </div>
-
+            <h6 style="color:#0B2545; font-weight:600; margin:0;">No past appointments</h6>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Cancellation Modal -->
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title text-danger"><i class="fas fa-times-circle me-2"></i>Cancel Appointment</h5>
+    <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+      <div class="modal-header border-0 pb-0" style="padding:1.5rem 1.5rem .5rem;">
+        <h5 class="modal-title" style="color:#991b1b; font-weight:600;">
+            <i class="fas fa-times-circle me-2"></i>Cancel Appointment
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <p class="mb-1">You are about to cancel your appointment with:</p>
-        <p class="fw-bold mb-1" id="cancel-doctor-name"></p>
-        <p class="text-muted mb-3" id="cancel-appt-time"></p>
-        <div class="alert alert-warning py-2" style="font-size:.85rem;">
-          <i class="fas fa-exclamation-triangle me-1"></i>
-          Appointments cannot be cancelled within 2 hours of the scheduled time.
+      <div class="modal-body" style="padding:1rem 1.5rem 1.5rem;">
+        <p style="font-size:.875rem; margin-bottom:.25rem;">Cancelling appointment with:</p>
+        <p class="fw-bold mb-1" id="cancel-doctor-name" style="color:#0B2545;"></p>
+        <p style="font-size:.85rem; color:#64748b;" id="cancel-appt-time"></p>
+        <div style="background:#fef9c3; border-radius:8px; padding:.75rem 1rem; font-size:.8rem; color:#854d0e; margin-bottom:1rem;">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Cannot cancel within 2 hours of the scheduled time.
         </div>
         <form id="cancel-form" method="POST">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Reason for cancellation <span class="text-muted fw-normal">(optional)</span></label>
-            <textarea name="cancellation_reason" class="form-control" rows="3"
-                      maxlength="255"
-                      placeholder="e.g. Schedule conflict, feeling better, etc."></textarea>
+          <div style="margin-bottom:1rem;">
+            <label class="mc-label">Reason <span style="font-weight:400; color:#9ca3af;">(optional)</span></label>
+            <textarea name="cancellation_reason" rows="3" maxlength="255"
+                      style="width:100%; padding:.65rem 1rem; border:1.5px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; font-family:inherit; resize:none;"
+                      placeholder="e.g. Schedule conflict, feeling better..."></textarea>
           </div>
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-danger">
-              <i class="fas fa-times me-1"></i>Confirm Cancellation
+            <button type="submit" style="flex:1; padding:.65rem; background:#ef4444; color:white; border:none; border-radius:8px; font-size:.875rem; font-weight:500; cursor:pointer;">
+                Confirm Cancellation
             </button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep Appointment</button>
+            <button type="button" data-bs-dismiss="modal"
+                    style="flex:1; padding:.65rem; background:white; color:#374151; border:1.5px solid #d1d5db; border-radius:8px; font-size:.875rem; cursor:pointer;">
+                Keep Appointment
+            </button>
           </div>
         </form>
       </div>
@@ -310,11 +291,22 @@
 </div>
 
 <script>
+function switchTab(tab, btn) {
+    document.getElementById('pane-upcoming').style.display = tab === 'upcoming' ? '' : 'none';
+    document.getElementById('pane-past').style.display     = tab === 'past'     ? '' : 'none';
+    document.getElementById('tab-upcoming').style.color    = tab === 'upcoming' ? '#1A5276' : '#64748b';
+    document.getElementById('tab-upcoming').style.borderBottomColor = tab === 'upcoming' ? '#1A5276' : 'transparent';
+    document.getElementById('tab-upcoming').style.fontWeight = tab === 'upcoming' ? '600' : '500';
+    document.getElementById('tab-past').style.color        = tab === 'past'     ? '#1A5276' : '#64748b';
+    document.getElementById('tab-past').style.borderBottomColor     = tab === 'past'     ? '#1A5276' : 'transparent';
+    document.getElementById('tab-past').style.fontWeight   = tab === 'past'     ? '600' : '500';
+}
+
 function openCancelModal(apptId, doctorName, apptTime) {
-  document.getElementById('cancel-doctor-name').textContent = doctorName;
-  document.getElementById('cancel-appt-time').textContent   = apptTime;
-  document.getElementById('cancel-form').action = '/patient/appointments/cancel/' + apptId;
-  new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    document.getElementById('cancel-doctor-name').textContent = doctorName;
+    document.getElementById('cancel-appt-time').textContent   = apptTime;
+    document.getElementById('cancel-form').action = '/patient/appointments/cancel/' + apptId;
+    new bootstrap.Modal(document.getElementById('cancelModal')).show();
 }
 </script>
 {% endblock %}

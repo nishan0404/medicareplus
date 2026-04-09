@@ -230,8 +230,8 @@
 
       <!-- Right: call buttons + back -->
       <div class="d-flex align-items-center gap-2 flex-shrink-0">
-        {% if call_available %}
-          {% if appt.appointment_type == 'Video Call' %}
+        {% if chat_today %}
+          {% if call_available and appt.appointment_type == 'Video Call' %}
           <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type='video') if user_role == 'patient' else url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='video') }}"
              class="call-header-btn" style="background:#1A5276;color:white;">
             <i class="fas fa-video"></i><span>Video Call</span>
