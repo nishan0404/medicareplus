@@ -6,7 +6,8 @@
       "Bash(grep -n \"verify_password\\\\|rate_limit\\\\|timeout\" /c/Users/nisha/MediCarePlus/app/routes/*.py)",
       "Bash(pip show:*)",
       "Bash(venv/Scripts/pip install:*)",
-      "WebFetch(domain:puppy-azul-93350623.figma.site)"
+      "WebFetch(domain:puppy-azul-93350623.figma.site)",
+      "Bash(python add_appointment_type.py)"
     ]
   }
 }

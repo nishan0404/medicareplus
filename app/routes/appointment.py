@@ -79,6 +79,7 @@ def book():
         appointment_date = request.form.get('appointment_date')
         appointment_time = request.form.get('appointment_time')
         reason           = request.form.get('reason', '').strip()
+        appointment_type = request.form.get('appointment_type', 'In-person')
 
         if not doctor_id or not appointment_date or not appointment_time:
             flash('Please select a doctor, date and time.', 'danger')
@@ -120,7 +121,8 @@ def book():
             'doctor_id': int(doctor_id),
             'appointment_date': appointment_date,
             'appointment_time': appointment_time,
-            'reason': reason
+            'reason': reason,
+            'appointment_type': appointment_type
         }
         return redirect(url_for('appointment.checkout'))
 
@@ -212,6 +214,7 @@ def payment_success():
         appointment_date=appt_date,
         appointment_time=appt_time,
         reason=booking.get('reason', ''),
+        appointment_type=booking.get('appointment_type', 'In-person'),
         status='Upcoming',
         payment_intent_id=payment_intent_id,
         payment_status='Paid',

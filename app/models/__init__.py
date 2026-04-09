@@ -77,6 +77,7 @@ class Appointment(db.Model):
     appointment_date  = db.Column(db.Date, nullable=False)
     appointment_time  = db.Column(db.Time, nullable=False)
     reason            = db.Column(db.String(255))
+    appointment_type  = db.Column(db.String(20), default='In-person')
     status            = db.Column(db.String(20), default='Upcoming')
     reminder_sent     = db.Column(db.Boolean, default=False)
     completed_at      = db.Column(db.DateTime)

@@ -81,6 +81,28 @@
                     <div class="booking-form mt-3 pt-3" id="form-{{ doctor.id }}" style="display:none; border-top:1px solid #f1f5f9;">
                         <form method="POST" action="/patient/book" onclick="event.stopPropagation()">
                             <input type="hidden" name="doctor_id" value="{{ doctor.id }}">
+
+                            <!-- Appointment Type -->
+                            <div class="mb-3">
+                                <label class="mc-label">Appointment Type</label>
+                                <div class="d-flex gap-2">
+                                    <label id="type-inperson-{{ doctor.id }}"
+                                           style="flex:1; display:flex; align-items:center; justify-content:center; gap:.5rem; padding:.6rem 1rem; border:1.5px solid #1A5276; border-radius:8px; cursor:pointer; font-size:.875rem; font-weight:500; background:rgba(26,82,118,.06); color:#1A5276;">
+                                        <input type="radio" name="appointment_type" value="In-person"
+                                               id="radio-inperson-{{ doctor.id }}" checked
+                                               style="display:none;" onchange="syncTypeStyle({{ doctor.id }})">
+                                        <i class="fas fa-hospital-user"></i> In-person
+                                    </label>
+                                    <label id="type-video-{{ doctor.id }}"
+                                           style="flex:1; display:flex; align-items:center; justify-content:center; gap:.5rem; padding:.6rem 1rem; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:.875rem; font-weight:500; color:#64748b;">
+                                        <input type="radio" name="appointment_type" value="Video Call"
+                                               id="radio-video-{{ doctor.id }}"
+                                               style="display:none;" onchange="syncTypeStyle({{ doctor.id }})">
+                                        <i class="fas fa-video"></i> Video Call
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="mc-label">Date</label>
@@ -229,6 +251,27 @@ function closeBookingForm(doctorId) {
     document.getElementById('check-' + doctorId).style.display = 'none';
     document.querySelector('[onclick*="toggleBookingForm(' + doctorId + '"]')?.classList.remove('selected');
     document.getElementById('bookingSummary').style.display = 'none';
+}
+
+function syncTypeStyle(doctorId) {
+    const inpersonLabel = document.getElementById('type-inperson-' + doctorId);
+    const videoLabel    = document.getElementById('type-video-'    + doctorId);
+    const inpersonRadio = document.getElementById('radio-inperson-'+ doctorId);
+    if (inpersonRadio.checked) {
+        inpersonLabel.style.borderColor = '#1A5276';
+        inpersonLabel.style.background  = 'rgba(26,82,118,.06)';
+        inpersonLabel.style.color       = '#1A5276';
+        videoLabel.style.borderColor    = '#e5e7eb';
+        videoLabel.style.background     = 'transparent';
+        videoLabel.style.color          = '#64748b';
+    } else {
+        videoLabel.style.borderColor    = '#1A5276';
+        videoLabel.style.background     = 'rgba(26,82,118,.06)';
+        videoLabel.style.color          = '#1A5276';
+        inpersonLabel.style.borderColor = '#e5e7eb';
+        inpersonLabel.style.background  = 'transparent';
+        inpersonLabel.style.color       = '#64748b';
+    }
 }
 
 function searchDoctors() {
