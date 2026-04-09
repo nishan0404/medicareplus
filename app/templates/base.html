@@ -9,53 +9,198 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
-        body { background-color: #f0f4f8; }
-        .navbar { background: linear-gradient(135deg, #1A5276, #1A8A4A); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .navbar-brand { font-weight: 700; font-size: 1.5rem; color: white !important; }
-        .navbar-brand span { color: #7DCEA0; }
-        .nav-link { color: rgba(255,255,255,0.9) !important; font-weight: 500; }
-        .nav-link:hover { color: white !important; }
-        .card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .card-header { border-radius: 16px 16px 0 0 !important; background: linear-gradient(135deg, #1A5276, #1A8A4A); color: white; padding: 20px 25px; }
-        .btn-primary { background: linear-gradient(135deg, #1A5276, #1A8A4A); border: none; border-radius: 8px; font-weight: 600; padding: 10px 24px; }
-        .btn-primary:hover { background: linear-gradient(135deg, #154360, #1E8449); transform: translateY(-1px); }
-        .form-control { border-radius: 8px; border: 2px solid #e0e0e0; padding: 10px 15px; transition: all 0.3s; }
-        .form-control:focus { border-color: #1A8A4A; box-shadow: 0 0 0 0.2rem rgba(26,138,74,0.15); }
-        .form-label { font-weight: 600; color: #2C3E50; }
-        .alert { border-radius: 10px; border: none; }
-        .alert-success { background: #d4edda; color: #155724; }
-        .alert-danger { background: #f8d7da; color: #721c24; }
-        footer { background: #1A5276; color: white; padding: 20px 0; margin-top: 60px; }
-        .strength-bar { height: 4px; border-radius: 2px; transition: all 0.3s; }
-        .strength-weak { background: #e74c3c; width: 33%; }
-        .strength-medium { background: #f39c12; width: 66%; }
-        .strength-strong { background: #27ae60; width: 100%; }
+        body { background-color: #F0F4F8; }
 
-        /* Chat unread badge on nav */
-        .nav-chat-badge {
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            font-size: 10px;
-            padding: 1px 5px;
-            margin-left: 3px;
-            vertical-align: middle;
+        /* ── Navbar ── */
+        .mc-navbar {
+            background: #0B2545;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
         }
+        .mc-navbar .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: white !important;
+            text-decoration: none;
+        }
+        .mc-navbar .nav-link {
+            color: rgba(255,255,255,0.75) !important;
+            font-weight: 500;
+            font-size: .9rem;
+            padding: 0.4rem 0.75rem !important;
+            border-radius: 6px;
+            transition: all .15s;
+        }
+        .mc-navbar .nav-link:hover,
+        .mc-navbar .nav-link.active {
+            color: white !important;
+            background: rgba(255,255,255,0.1);
+        }
+        .mc-navbar .nav-user {
+            color: rgba(255,255,255,0.85);
+            font-size: .85rem;
+            font-weight: 500;
+        }
+
+        /* ── Cards ── */
+        .mc-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 1.5rem;
+        }
+        .mc-card-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0B2545;
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── Stat Cards ── */
+        .mc-stat-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .mc-stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        .mc-stat-label { font-size: .8rem; color: #64748b; font-weight: 500; }
+        .mc-stat-value { font-size: 1.5rem; font-weight: 700; color: #0B2545; line-height: 1; }
+
+        /* ── Buttons ── */
+        .btn-mc-green {
+            background: #1A8A4A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            padding: .5rem 1.25rem;
+            transition: background .15s;
+        }
+        .btn-mc-green:hover { background: #157a40; color: white; }
+        .btn-mc-blue {
+            background: #1A5276;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            padding: .5rem 1.25rem;
+            transition: background .15s;
+        }
+        .btn-mc-blue:hover { background: #164465; color: white; }
+        .btn-mc-dark {
+            background: #0B2545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            padding: .5rem 1.25rem;
+            transition: background .15s;
+        }
+        .btn-mc-dark:hover { background: #081b33; color: white; }
+        .btn-mc-outline {
+            background: white;
+            color: #1A5276;
+            border: 1.5px solid #1A5276;
+            border-radius: 8px;
+            font-weight: 500;
+            padding: .5rem 1.25rem;
+            transition: all .15s;
+        }
+        .btn-mc-outline:hover { background: #1A5276; color: white; }
+
+        /* Keep Bootstrap btn-primary mapped to green */
+        .btn-primary { background: #1A8A4A !important; border-color: #1A8A4A !important; }
+        .btn-primary:hover { background: #157a40 !important; border-color: #157a40 !important; }
+
+        /* ── Forms ── */
+        .mc-input {
+            width: 100%;
+            padding: .625rem 1rem;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: .9rem;
+            transition: all .15s;
+            outline: none;
+            background: white;
+        }
+        .mc-input:focus { border-color: #1A5276; box-shadow: 0 0 0 3px rgba(26,82,118,.12); }
+        .mc-label { font-size: .85rem; font-weight: 500; color: #374151; margin-bottom: .35rem; display: block; }
+
+        .form-control { border-radius: 8px; border: 1.5px solid #d1d5db; font-size: .9rem; }
+        .form-control:focus { border-color: #1A5276; box-shadow: 0 0 0 3px rgba(26,82,118,.12); }
+        .form-label { font-size: .85rem; font-weight: 500; color: #374151; }
+
+        /* ── Alerts ── */
+        .alert { border-radius: 10px; border: none; font-size: .9rem; }
+        .alert-success { background: #dcfce7; color: #166534; }
+        .alert-danger  { background: #fee2e2; color: #991b1b; }
+        .alert-warning { background: #fef9c3; color: #854d0e; }
+        .alert-info    { background: #dbeafe; color: #1e40af; }
+
+        /* ── Page heading ── */
+        .mc-page-title { font-size: 1.6rem; font-weight: 600; color: #0B2545; }
+        .mc-page-sub   { color: #64748b; font-size: .9rem; margin-top: .15rem; }
+
+        /* ── Appointment status badges ── */
+        .badge-upcoming  { background:#dbeafe; color:#1e40af; }
+        .badge-completed { background:#dcfce7; color:#166534; }
+        .badge-cancelled { background:#f3f4f6; color:#6b7280; }
+        .badge-noshow    { background:#fef9c3; color:#854d0e; }
+        .badge-open      { background:#dcfce7; color:#166534; }
+
+        /* ── Pulse animation ── */
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        /* ── Strength bar (register) ── */
+        .strength-bar { height: 4px; border-radius: 2px; transition: all .3s; }
+        .strength-weak   { background:#ef4444; width:33%; }
+        .strength-medium { background:#f59e0b; width:66%; }
+        .strength-strong { background:#22c55e; width:100%; }
+
+        /* ── Chat unread dot ── */
+        .nav-chat-badge {
+            background:#ef4444; color:white; border-radius:50%;
+            font-size:9px; padding:1px 4px; margin-left:3px; vertical-align:middle;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
 <body>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-heartbeat me-2"></i>Medi<span>Care+</span>
+<nav class="mc-navbar navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand me-4" href="/">
+            <i class="fas fa-heartbeat me-2" style="color:#1A8A4A;"></i>MediCare+
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                style="filter:invert(1);">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav me-auto">
                 {% if current_user.is_authenticated %}
                     {% if current_user.role == 'patient' %}
                         <li class="nav-item">
@@ -121,6 +266,15 @@
                             </a>
                         </li>
                     {% endif %}
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto align-items-center">
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item me-2">
+                        <span class="nav-user">
+                            <i class="fas fa-user-circle me-1"></i>{{ current_user.full_name }}
+                        </span>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/logout">
                             <i class="fas fa-sign-out-alt me-1"></i>Logout
@@ -128,14 +282,10 @@
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="/login">
-                            <i class="fas fa-sign-in-alt me-1"></i>Login
-                        </a>
+                        <a class="nav-link" href="/login">Login</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/register">
-                            <i class="fas fa-user-plus me-1"></i>Register
-                        </a>
+                    <li class="nav-item ms-2">
+                        <a href="/register" class="btn btn-mc-green btn-sm px-3">Register</a>
                     </li>
                 {% endif %}
             </ul>
@@ -144,11 +294,11 @@
 </nav>
 
 <!-- Flash Messages -->
-<div class="container mt-3">
+<div class="container-fluid px-4 mt-3">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show">
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" style="max-width:720px;">
                     <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }} me-2"></i>
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -159,167 +309,67 @@
 </div>
 
 <!-- Main Content -->
-<main class="container my-4">
+<main class="container-fluid px-4 py-4" style="max-width:1440px;">
     {% block content %}{% endblock %}
 </main>
 
-<!-- Footer -->
-<footer class="text-center">
-    <div class="container">
-        <p class="mb-0">
-            <i class="fas fa-heartbeat me-2"></i>
-            MediCare+ &copy; 2026 | AI-Powered Healthcare Management System
-        </p>
-    </div>
-</footer>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 {% block scripts %}{% endblock %}
 
 <!-- AI Chatbot Widget -->
 {% if current_user.is_authenticated %}
-<div id="chatbot-container" style="position:fixed; bottom:20px; right:20px; z-index:9999;">
+<div id="chatbot-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;">
     <button onclick="toggleChat()"
-            style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#1A5276,#1A8A4A); border:none; color:white; font-size:24px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
+            style="width:56px;height:56px;border-radius:50%;background:#1A8A4A;border:none;color:white;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(26,138,74,0.4);">
         <i class="fas fa-comment-medical"></i>
     </button>
     <div id="chatbot-window"
-         style="display:none; position:absolute; bottom:70px; right:0; width:350px; height:500px; background:white; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,0.2); flex-direction:column; overflow:hidden;">
-        <div style="background:linear-gradient(135deg,#1A5276,#1A8A4A); padding:15px 20px; color:white;">
+         style="display:none;position:absolute;bottom:68px;right:0;width:350px;height:500px;background:white;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);flex-direction:column;overflow:hidden;">
+        <div style="background:#0B2545;padding:14px 18px;color:white;">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-0 fw-bold"><i class="fas fa-robot me-2"></i>MediCare+ Assistant</h6>
-                    <small style="opacity:0.8;">AI Healthcare Assistant</small>
+                    <small style="opacity:.75;">AI Healthcare Assistant</small>
                 </div>
-                <button onclick="toggleChat()" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">
+                <button onclick="toggleChat()" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
-        <div style="background:#fff3cd; padding:8px 12px; font-size:11px; color:#856404;">
-            <i class="fas fa-exclamation-triangle me-1"></i>
-            Not a substitute for professional medical advice.
+        <div style="background:#fef9c3;padding:7px 12px;font-size:11px;color:#854d0e;">
+            <i class="fas fa-exclamation-triangle me-1"></i>Not a substitute for professional medical advice.
         </div>
-        <div id="chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa;">
+        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:14px;background:#F0F4F8;">
             <div class="d-flex mb-3">
-                <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#1A5276,#1A8A4A); display:flex; align-items:center; justify-content:center; color:white; font-size:14px; flex-shrink:0; margin-right:8px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:#1A8A4A;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0;margin-right:8px;">
                     <i class="fas fa-robot"></i>
                 </div>
-                <div style="background:white; border-radius:12px; padding:10px 14px; max-width:80%; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                <div style="background:white;border-radius:12px;padding:10px 14px;max-width:82%;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
                     <p class="mb-0" style="font-size:13px;">Hi! I'm your MediCare+ Assistant 👋 How can I help you today?</p>
                 </div>
             </div>
         </div>
-        <div style="padding:12px; background:white; border-top:1px solid #e0e0e0;">
+        <div style="padding:10px 12px;background:white;border-top:1px solid #f1f5f9;">
             <div class="input-group">
                 <input type="text" id="chat-input" class="form-control form-control-sm"
                        placeholder="Type your message..."
                        onkeypress="if(event.key==='Enter') sendMessage()">
-                <button class="btn btn-sm btn-primary" onclick="sendMessage()">
+                <button class="btn btn-sm btn-mc-green" onclick="sendMessage()">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
         </div>
     </div>
 </div>
-
 <script>
-let chatHistory = [];
-let chatOpen = false;
-
-function toggleChat() {
-    const win = document.getElementById('chatbot-window');
-    chatOpen = !chatOpen;
-    win.style.display = chatOpen ? 'flex' : 'none';
-    if (chatOpen) document.getElementById('chat-input').focus();
-}
-
-function addMessage(role, content) {
-    const container = document.getElementById('chat-messages');
-    const isUser = role === 'user';
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'd-flex mb-3' + (isUser ? ' justify-content-end' : '');
-    if (!isUser) {
-        msgDiv.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1A5276,#1A8A4A);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div style="background:white;border-radius:12px;padding:10px 14px;max-width:80%;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><p class="mb-0" style="font-size:13px;">${content}</p></div>`;
-    } else {
-        msgDiv.innerHTML = `<div style="background:linear-gradient(135deg,#1A5276,#1A8A4A);border-radius:12px;padding:10px 14px;max-width:80%;color:white;"><p class="mb-0" style="font-size:13px;">${content}</p></div>`;
-    }
-    container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function addMessageHTML(role, content) {
-    const container = document.getElementById('chat-messages');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'd-flex mb-3';
-    msgDiv.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1A5276,#1A8A4A);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div style="background:white;border-radius:12px;padding:10px 14px;max-width:80%;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><p class="mb-0" style="font-size:13px;">${content}</p></div>`;
-    container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function addRedirectButton(url, label) {
-    const container = document.getElementById('chat-messages');
-    const btnDiv = document.createElement('div');
-    btnDiv.className = 'd-flex mb-3';
-    btnDiv.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1A5276,#1A8A4A);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div><a href="${url}" style="display:inline-block;background:linear-gradient(135deg,#1A5276,#1A8A4A);color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;">${label}</a></div>`;
-    container.appendChild(btnDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function addTyping() {
-    const container = document.getElementById('chat-messages');
-    const typing = document.createElement('div');
-    typing.id = 'typing-indicator';
-    typing.className = 'd-flex mb-3';
-    typing.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1A5276,#1A8A4A);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div style="background:white;border-radius:12px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><span style="font-size:13px;">Typing...</span></div>`;
-    container.appendChild(typing);
-    container.scrollTop = container.scrollHeight;
-}
-
-function removeTyping() {
-    const typing = document.getElementById('typing-indicator');
-    if (typing) typing.remove();
-}
-
-async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const message = input.value.trim();
-    if (!message) return;
-    input.value = '';
-    addMessage('user', message);
-    addTyping();
-    chatHistory.push({ role: 'user', content: message });
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message, history: chatHistory })
-        });
-        const data = await response.json();
-        removeTyping();
-        const reply = data.reply || 'Sorry, I could not process that. Please try again.';
-        addMessageHTML('assistant', reply);
-        chatHistory.push({ role: 'assistant', content: reply });
-        const lowerMsg = message.toLowerCase();
-        if (lowerMsg.includes('book appointment') || lowerMsg.includes('book an appointment')) {
-            addRedirectButton('/patient/book', '📅 Book Appointment Now');
-        } else if (lowerMsg.includes('symptom') || lowerMsg.includes('check symptom')) {
-            addRedirectButton('/patient/symptoms', '🩺 Open Symptom Checker');
-        } else if (lowerMsg.includes('medical record') || lowerMsg.includes('my record')) {
-            addRedirectButton('/patient/records', '📋 View Medical Records');
-        } else if (lowerMsg.includes('my appointment')) {
-            addRedirectButton('/patient/appointments', '📆 View My Appointments');
-        } else if (lowerMsg.includes('profile') || lowerMsg.includes('update my')) {
-            addRedirectButton('/patient/profile', '👤 Go to My Profile');
-        } else if (lowerMsg.includes('dashboard')) {
-            addRedirectButton('/patient/dashboard', '🏠 Go to Dashboard');
-        }
-    } catch (error) {
-        removeTyping();
-        addMessage('assistant', 'Sorry, I am having trouble connecting. Please try again.');
-    }
-}
+let chatHistory=[];let chatOpen=false;
+function toggleChat(){const w=document.getElementById('chatbot-window');chatOpen=!chatOpen;w.style.display=chatOpen?'flex':'none';if(chatOpen)document.getElementById('chat-input').focus();}
+function addMessage(role,content){const c=document.getElementById('chat-messages');const isUser=role==='user';const d=document.createElement('div');d.className='d-flex mb-3'+(isUser?' justify-content-end':'');if(!isUser){d.innerHTML=`<div style="width:30px;height:30px;border-radius:50%;background:#1A8A4A;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div style="background:white;border-radius:12px;padding:10px 14px;max-width:82%;box-shadow:0 1px 3px rgba(0,0,0,0.08);"><p class="mb-0" style="font-size:13px;">${content}</p></div>`;}else{d.innerHTML=`<div style="background:#1A5276;border-radius:12px;padding:10px 14px;max-width:82%;color:white;"><p class="mb-0" style="font-size:13px;">${content}</p></div>`;}c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function addMessageHTML(role,content){const c=document.getElementById('chat-messages');const d=document.createElement('div');d.className='d-flex mb-3';d.innerHTML=`<div style="width:30px;height:30px;border-radius:50%;background:#1A8A4A;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div style="background:white;border-radius:12px;padding:10px 14px;max-width:82%;box-shadow:0 1px 3px rgba(0,0,0,0.08);"><p class="mb-0" style="font-size:13px;">${content}</p></div>`;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function addRedirectButton(url,label){const c=document.getElementById('chat-messages');const d=document.createElement('div');d.className='d-flex mb-3';d.innerHTML=`<div style="width:30px;height:30px;border-radius:50%;background:#1A8A4A;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div><a href="${url}" style="display:inline-block;background:#1A8A4A;color:white;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;">${label}</a></div>`;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function addTyping(){const c=document.getElementById('chat-messages');const t=document.createElement('div');t.id='typing-indicator';t.className='d-flex mb-3';t.innerHTML=`<div style="width:30px;height:30px;border-radius:50%;background:#1A8A4A;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0;margin-right:8px;"><i class="fas fa-robot"></i></div><div style="background:white;border-radius:12px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);"><span style="font-size:13px;">Typing...</span></div>`;c.appendChild(t);c.scrollTop=c.scrollHeight;}
+function removeTyping(){const t=document.getElementById('typing-indicator');if(t)t.remove();}
+async function sendMessage(){const input=document.getElementById('chat-input');const message=input.value.trim();if(!message)return;input.value='';addMessage('user',message);addTyping();chatHistory.push({role:'user',content:message});try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:chatHistory})});const data=await r.json();removeTyping();const reply=data.reply||'Sorry, I could not process that.';addMessageHTML('assistant',reply);chatHistory.push({role:'assistant',content:reply});const lm=message.toLowerCase();if(lm.includes('book appointment')||lm.includes('book an appointment'))addRedirectButton('/patient/book','📅 Book Appointment Now');else if(lm.includes('symptom'))addRedirectButton('/patient/symptoms','🩺 Open Symptom Checker');else if(lm.includes('medical record')||lm.includes('my record'))addRedirectButton('/patient/records','📋 View Medical Records');else if(lm.includes('my appointment'))addRedirectButton('/patient/appointments','📆 View My Appointments');else if(lm.includes('profile'))addRedirectButton('/patient/profile','👤 Go to My Profile');}catch(e){removeTyping();addMessage('assistant','Sorry, I am having trouble connecting.');}}
 </script>
 {% endif %}
 

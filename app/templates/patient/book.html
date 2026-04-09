@@ -1,33 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="row mb-4">
-    <div class="col">
-        <h2 class="fw-bold" style="color:#1A5276;">
-            <i class="fas fa-calendar-plus me-2"></i>Book an Appointment
-        </h2>
-        <p class="text-muted">Find a doctor and schedule your visit</p>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="mc-page-title mb-0"><i class="fas fa-calendar-plus me-2" style="color:#1A5276;"></i>Book an Appointment</h1>
+        <p class="mc-page-sub">Schedule your visit with our healthcare professionals</p>
     </div>
-    <div class="col-auto">
-        <a href="/patient/dashboard" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back
-        </a>
-    </div>
+    <a href="/patient/dashboard" class="btn-mc-outline" style="font-size:.875rem; text-decoration:none; display:flex; align-items:center; gap:.5rem;">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
 </div>
 
-<div class="row">
+<div class="row g-4">
 
-    <!-- Search Panel -->
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-search me-2"></i>Search Doctors
-                </h5>
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Specialisation</label>
+    <!-- Left panel -->
+    <div class="col-lg-8">
+
+        <!-- Search & Filter -->
+        <div class="mc-card mb-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="mc-label">Specialisation</label>
                     <select class="form-control" id="specialisation_filter">
                         <option value="">All Specialisations</option>
                         {% for spec in specialisations %}
@@ -35,63 +28,67 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Date</label>
-                    <input type="date" class="form-control" id="date_filter"
-                           min="{{ today }}"
-                           value="{{ today }}">
-                </div>
-                <div class="d-grid">
-                    <button class="btn btn-primary" onclick="searchDoctors()">
-                        <i class="fas fa-search me-2"></i>Search
-                    </button>
+                <div class="col-md-6">
+                    <label class="mc-label">Preferred Date</label>
+                    <input type="date" class="form-control" id="date_filter" min="{{ today }}" value="{{ today }}">
                 </div>
             </div>
+            <div class="mt-3">
+                <button class="btn-mc-blue" style="padding:.55rem 1.5rem; font-size:.875rem; cursor:pointer; border:none; border-radius:8px;" onclick="searchDoctors()">
+                    <i class="fas fa-search me-2"></i>Search Doctors
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Doctor Results -->
-    <div class="col-md-8">
-        <div id="doctorResults">
-            {% for doctor in doctors %}
-            <div class="card mb-3 doctor-card" data-spec="{{ doctor.specialisation }}">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h5 class="fw-bold mb-1">
-                                <i class="fas fa-user-md me-2 text-success"></i>
+        <!-- Doctor List -->
+        <div class="mc-card mb-4">
+            <h2 class="mc-card-header">Available Doctors</h2>
+            <div id="doctorResults">
+                {% for doctor in doctors %}
+                <div class="doctor-card mb-3 p-4 rounded-3 border"
+                     data-spec="{{ doctor.specialisation }}"
+                     style="border-color:#e5e7eb; transition: all .15s; cursor:pointer;"
+                     onclick="toggleBookingForm({{ doctor.id }}, this)">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="d-flex align-items-start gap-3">
+                            <!-- Avatar -->
+                            <div style="width:56px; height:56px; background:#dbeafe; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <span style="font-size:1.2rem; font-weight:600; color:#1A5276;">
+                                    {{ doctor.full_name.split()[-1][0] if doctor.full_name else 'D' }}
+                                </span>
+                            </div>
+                            <div>
+                                <h3 style="font-size:1rem; font-weight:600; color:#0B2545; margin-bottom:.25rem;">
                                     {{ doctor.full_name }}
-                            </h5>
-                            <span class="badge bg-success mb-2">{{ doctor.specialisation }}</span>
-                            {% if doctor.bio %}
-                            <p class="text-muted small mb-0">
-                                {{ doctor.bio[:120] }}{% if doctor.bio|length > 120 %}…{% endif %}
-                            </p>
-                            {% endif %}
+                                </h3>
+                                <span style="background:#dcfce7; color:#166534; font-size:.75rem; padding:.2rem .65rem; border-radius:10px; font-weight:500; display:inline-block; margin-bottom:.5rem;">
+                                    {{ doctor.specialisation }}
+                                </span>
+                                {% if doctor.bio %}
+                                <p style="font-size:.825rem; color:#64748b; margin:0;">
+                                    {{ doctor.bio[:120] }}{% if doctor.bio|length > 120 %}…{% endif %}
+                                </p>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="col-md-4 text-end">
-                            <button class="btn btn-primary btn-sm"
-                                    onclick="showBookingForm({{ doctor.id }}, '{{ doctor.full_name }}', '{{ doctor.specialisation }}')">
-                                <i class="fas fa-calendar-plus me-1"></i>Book
-                            </button>
+                        <div id="check-{{ doctor.id }}"
+                             style="display:none; width:24px; height:24px; background:#1A5276; border-radius:50%; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i class="fas fa-check" style="color:white; font-size:.65rem;"></i>
                         </div>
                     </div>
 
-                    <!-- Booking Form (hidden by default) -->
-                    <div class="booking-form mt-3" id="form-{{ doctor.id }}" style="display:none;">
-                        <hr>
-                        <form method="POST" action="/patient/book">
+                    <!-- Booking Form -->
+                    <div class="booking-form mt-3 pt-3" id="form-{{ doctor.id }}" style="display:none; border-top:1px solid #f1f5f9;">
+                        <form method="POST" action="/patient/book" onclick="event.stopPropagation()">
                             <input type="hidden" name="doctor_id" value="{{ doctor.id }}">
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Date</label>
-                                    <input type="date" name="appointment_date"
-                                           class="form-control" id="appt-date-{{ doctor.id }}"
-                                           min="{{ today }}" required>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="mc-label">Date</label>
+                                    <input type="date" name="appointment_date" class="form-control"
+                                           id="appt-date-{{ doctor.id }}" min="{{ today }}" required>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Time</label>
+                                <div class="col-md-6">
+                                    <label class="mc-label">Time</label>
                                     <select name="appointment_time" class="form-control" required>
                                         <option value="">Select time</option>
                                         <option value="09:00">9:00 AM</option>
@@ -111,67 +108,122 @@
                                     </select>
                                 </div>
                             </div>
-
                             <div class="mb-3">
-                                <label class="form-label fw-bold">
-                                    Reason for Visit
-                                    <span class="text-muted fw-normal">(optional)</span>
-                                </label>
+                                <label class="mc-label">Reason for Visit <span style="font-weight:400; color:#9ca3af;">(optional)</span></label>
                                 <textarea name="reason" class="form-control" rows="2"
                                           placeholder="Briefly describe your symptoms or reason for visit"></textarea>
                             </div>
-
                             <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-check me-2"></i>Confirm Booking
+                                <button type="submit" class="btn-mc-green" style="font-size:.875rem; padding:.55rem 1.25rem; border:none; cursor:pointer; border-radius:8px;">
+                                    <i class="fas fa-check me-1"></i>Confirm Booking
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary"
-                                        onclick="hideBookingForm({{ doctor.id }})">
+                                <button type="button" class="btn-mc-outline" style="font-size:.875rem; padding:.55rem 1.25rem; cursor:pointer;"
+                                        onclick="event.stopPropagation(); closeBookingForm({{ doctor.id }})">
                                     Cancel
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+        </div>
+
+        <!-- Time Slot Legend -->
+        <div class="mc-card" style="padding:1rem 1.5rem;">
+            <div class="d-flex gap-4" style="font-size:.8rem; color:#64748b;">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:16px; height:16px; background:#dcfce7; border:1px solid #bbf7d0; border-radius:4px;"></div>
+                    <span>Available time slot</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:16px; height:16px; background:#fee2e2; border:1px solid #fecaca; border-radius:4px;"></div>
+                    <span>Already booked</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="col-lg-4">
+        <!-- Need Help -->
+        <div class="mc-card" style="background:#dbeafe; border-color:#bfdbfe;">
+            <h3 style="font-size:1rem; font-weight:600; color:#0B2545; margin-bottom:.5rem;">
+                <i class="fas fa-question-circle me-2" style="color:#1A5276;"></i>Need Help?
+            </h3>
+            <p style="font-size:.85rem; color:#1e3a5f; margin-bottom:.75rem;">
+                Contact our support team for assistance with booking or any questions.
+            </p>
+            <p style="font-size:.8rem; color:#64748b; margin-bottom:.5rem;">
+                <i class="fas fa-info-circle me-1"></i>Bookings can be cancelled up to 2 hours before.
+            </p>
+        </div>
+
+        <!-- Booking Summary (visible once doctor selected) -->
+        <div class="mc-card mt-3" id="bookingSummary" style="display:none;">
+            <h3 style="font-size:1rem; font-weight:600; color:#0B2545; margin-bottom:1rem;">Payment Summary</h3>
+            <div style="border-top:1px solid #f1f5f9; padding-top:.75rem;">
+                <div class="d-flex justify-content-between mb-2" style="font-size:.875rem; color:#374151;">
+                    <span>Consultation Fee</span><span>$75.00 AUD</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3" style="font-size:.875rem; color:#374151;">
+                    <span>Booking Fee</span><span>$0.00 AUD</span>
+                </div>
+                <div class="d-flex justify-content-between" style="font-size:1rem; font-weight:700; color:#0B2545; border-top:1px solid #f1f5f9; padding-top:.75rem;">
+                    <span>Total</span><span>$75.00 AUD</span>
+                </div>
+            </div>
+            <p style="font-size:.7rem; color:#9ca3af; text-align:center; margin-top:1rem; margin-bottom:0;">
+                By proceeding, you agree to our Terms of Service and Privacy Policy
+            </p>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
+<style>
+.doctor-card:hover { border-color: #1A5276 !important; box-shadow: 0 2px 8px rgba(26,82,118,.12); }
+.doctor-card.selected { border-color: #1A5276 !important; background: rgba(26,82,118,.03); }
+</style>
 <script>
-    // Set today's date
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date_filter').value = today;
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('date_filter').value = today;
 
-    function showBookingForm(doctorId, name, spec) {
-        // Hide all other forms first
-        document.querySelectorAll('.booking-form').forEach(f => f.style.display = 'none');
-        // Show this doctor's form
-        document.getElementById('form-' + doctorId).style.display = 'block';
-        // Set minimum date
+function toggleBookingForm(doctorId, card) {
+    const form  = document.getElementById('form-' + doctorId);
+    const check = document.getElementById('check-' + doctorId);
+    const isOpen = form.style.display !== 'none';
+
+    // Close all others
+    document.querySelectorAll('.booking-form').forEach(f => f.style.display = 'none');
+    document.querySelectorAll('[id^="check-"]').forEach(c => c.style.display = 'none');
+    document.querySelectorAll('.doctor-card').forEach(c => c.classList.remove('selected'));
+
+    if (!isOpen) {
+        form.style.display  = 'block';
+        check.style.display = 'flex';
+        card.classList.add('selected');
+        document.getElementById('bookingSummary').style.display = 'block';
         const dateInput = document.getElementById('appt-date-' + doctorId);
-        if (dateInput) dateInput.min = today;
+        if (dateInput) { dateInput.min = today; dateInput.value = today; }
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        document.getElementById('bookingSummary').style.display = 'none';
     }
+}
 
-    function hideBookingForm(doctorId) {
-        document.getElementById('form-' + doctorId).style.display = 'none';
-    }
+function closeBookingForm(doctorId) {
+    document.getElementById('form-' + doctorId).style.display = 'none';
+    document.getElementById('check-' + doctorId).style.display = 'none';
+    document.querySelector('[onclick*="toggleBookingForm(' + doctorId + '"]')?.classList.remove('selected');
+    document.getElementById('bookingSummary').style.display = 'none';
+}
 
-    function searchDoctors() {
-        const spec = document.getElementById('specialisation_filter').value.toLowerCase();
-        const cards = document.querySelectorAll('.doctor-card');
-        cards.forEach(card => {
-            const cardSpec = card.getAttribute('data-spec').toLowerCase();
-            if (!spec || cardSpec.includes(spec)) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
+function searchDoctors() {
+    const spec = document.getElementById('specialisation_filter').value.toLowerCase();
+    document.querySelectorAll('.doctor-card').forEach(card => {
+        const cardSpec = card.getAttribute('data-spec').toLowerCase();
+        card.style.display = (!spec || cardSpec.includes(spec)) ? 'block' : 'none';
+    });
+}
 </script>
 {% endblock %}

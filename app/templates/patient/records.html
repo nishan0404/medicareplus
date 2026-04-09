@@ -1,171 +1,174 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="row mb-4">
-    <div class="col">
-        <h2 class="fw-bold" style="color:#1A5276;">
-            <i class="fas fa-file-medical me-2"></i>Medical Records
-        </h2>
-        <p class="text-muted">Your complete health history</p>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="mc-page-title mb-0"><i class="fas fa-file-medical me-2" style="color:#1A5276;"></i>Medical Records</h1>
+        <p class="mc-page-sub">Access and manage your health records</p>
     </div>
-    <div class="col-auto d-flex gap-2">
-        <a href="/patient/records/pdf" class="btn btn-success">
-            <i class="fas fa-download me-2"></i>Download PDF
+    <div class="d-flex gap-2">
+        <a href="/patient/records/pdf" class="btn-mc-green d-flex align-items-center gap-2" style="text-decoration:none; font-size:.875rem; padding:.5rem 1rem;">
+            <i class="fas fa-download"></i> Download PDF
         </a>
-        <a href="/patient/dashboard" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back
+        <a href="/patient/dashboard" class="btn-mc-outline d-flex align-items-center gap-2" style="text-decoration:none; font-size:.875rem; padding:.5rem 1rem;">
+            <i class="fas fa-arrow-left"></i> Back
         </a>
     </div>
 </div>
 
 <!-- Tabs -->
-<ul class="nav nav-tabs mb-4" id="recordsTabs">
-    <li class="nav-item">
-        <a class="nav-link active" data-bs-toggle="tab" href="#consultations">
-            <i class="fas fa-stethoscope me-2"></i>Consultations
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#prescriptions">
-            <i class="fas fa-pills me-2"></i>Prescriptions
-        </a>
-    </li>
-</ul>
+<div style="border-bottom:2px solid #f1f5f9; margin-bottom:1.5rem;">
+    <ul class="nav" id="recordsTabs" style="gap:.25rem;">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#consultations"
+               style="color:#64748b; font-weight:500; font-size:.9rem; padding:.6rem 1.1rem; border-radius:8px 8px 0 0;">
+                <i class="fas fa-stethoscope me-2"></i>Consultations
+                <span style="background:#f1f5f9; color:#374151; font-size:.7rem; padding:.15rem .5rem; border-radius:10px; margin-left:.4rem;">{{ appointments|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#prescriptions"
+               style="color:#64748b; font-weight:500; font-size:.9rem; padding:.6rem 1.1rem; border-radius:8px 8px 0 0;">
+                <i class="fas fa-pills me-2"></i>Prescriptions
+                <span style="background:#f1f5f9; color:#374151; font-size:.7rem; padding:.15rem .5rem; border-radius:10px; margin-left:.4rem;">{{ prescriptions|length }}</span>
+            </a>
+        </li>
+    </ul>
+</div>
 
 <div class="tab-content">
 
-    <!-- Consultations Tab -->
+    <!-- Consultations -->
     <div class="tab-pane fade show active" id="consultations">
-        {% if appointments %}
-            {% for appt in appointments %}
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <h6 class="fw-bold text-success mb-1">
-                                <i class="fas fa-calendar me-2"></i>
-                                {{ appt.appointment_date.strftime('%d %B %Y') }}
-                            </h6>
-                            <small class="text-muted">
-                                {{ appt.appointment_time.strftime('%I:%M %p') }}
-                            </small>
+        <div class="mc-card">
+            {% if appointments %}
+                <div style="display:flex; flex-direction:column; gap:.75rem;">
+                {% for appt in appointments %}
+                <div style="border:1px solid #e5e7eb; border-radius:10px; padding:1.1rem 1.25rem; transition:box-shadow .15s;">
+                    <div class="row align-items-center g-3">
+                        <!-- Icon -->
+                        <div class="col-auto">
+                            <div style="width:44px; height:44px; background:#dbeafe; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-file-medical" style="color:#1A5276;"></i>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <small class="text-muted">Doctor</small>
-                            <p class="mb-0 fw-bold">{{ appt.doctor.full_name }}</p>
-                            <small class="text-muted">{{ appt.doctor.specialisation }}</small>
+                        <!-- Info -->
+                        <div class="col">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <span style="font-weight:600; color:#0B2545; font-size:.95rem;">
+                                    {% if appt.notes %}{{ appt.notes.diagnosis }}{% else %}Consultation{% endif %}
+                                </span>
+                                <span style="background:#dcfce7; color:#166534; font-size:.7rem; padding:.15rem .55rem; border-radius:10px; font-weight:500;">Consultation Notes</span>
+                            </div>
+                            <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem; color:#64748b;">
+                                <span><i class="fas fa-calendar me-1"></i>{{ appt.appointment_date.strftime('%B %d, %Y') }}</span>
+                                <span>•</span>
+                                <span>{{ appt.doctor.full_name }}</span>
+                                <span>•</span>
+                                <span>{{ appt.doctor.specialisation }}</span>
+                            </div>
                         </div>
-                        <div class="col-md-4">
+                        <!-- Actions -->
+                        <div class="col-auto d-flex gap-2">
                             {% if appt.notes %}
-                                <small class="text-muted">Diagnosis</small>
-                                <p class="mb-0 fw-bold">{{ appt.notes.diagnosis }}</p>
-                            {% else %}
-                                <span class="text-muted">No notes recorded</span>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-2 text-end">
-                            {% if appt.notes %}
-                            <button class="btn btn-outline-primary btn-sm"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#notes-{{ appt.id }}">
-                                <i class="fas fa-eye me-1"></i>View Notes
+                            <button style="width:36px; height:36px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer; color:#64748b; transition:all .15s;"
+                                    data-bs-toggle="collapse" data-bs-target="#notes-{{ appt.id }}"
+                                    title="View Notes">
+                                <i class="fas fa-eye"></i>
                             </button>
                             {% endif %}
                         </div>
                     </div>
 
                     {% if appt.notes %}
-                    <div class="collapse mt-3" id="notes-{{ appt.id }}">
-                        <div class="bg-light p-3 rounded">
-                            <strong>Consultation Notes:</strong>
-                            <p class="mb-2 mt-1">{{ appt.notes.notes }}</p>
+                    <div class="collapse" id="notes-{{ appt.id }}">
+                        <div style="background:#f8fafc; border-radius:8px; padding:.875rem 1rem; margin-top:.875rem;">
+                            {% if not appt.notes.no_notes_recorded %}
+                            <div class="mb-2">
+                                <span style="font-size:.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.04em;">Doctor's Notes</span>
+                                <p style="font-size:.875rem; color:#374151; margin:.3rem 0 0;">{{ appt.notes.notes }}</p>
+                            </div>
+                            {% endif %}
                             {% if appt.notes.follow_up_date %}
-                            <strong>Follow-up Date:</strong>
-                            <p class="mb-0">
-                                {{ appt.notes.follow_up_date.strftime('%d %B %Y') }}
-                            </p>
+                            <div style="background:#fef9c3; border-radius:6px; padding:.5rem .75rem; font-size:.8rem; color:#854d0e; margin-top:.5rem;">
+                                <i class="fas fa-calendar-check me-1"></i>
+                                <strong>Follow-up:</strong> {{ appt.notes.follow_up_date.strftime('%d %B %Y') }}
+                                <a href="/patient/book" style="color:#1A5276; font-weight:500; margin-left:.5rem;">Book Now →</a>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
                     {% endif %}
-
                 </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-file-medical fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No consultation records yet</h5>
-                    <p class="text-muted">
-                        Your medical history will appear here after your first appointment
-                    </p>
-                    <a href="/patient/book" class="btn btn-primary">
-                        <i class="fas fa-calendar-plus me-2"></i>Book an Appointment
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                        <i class="fas fa-file-medical" style="font-size:1.5rem; color:#94a3b8;"></i>
+                    </div>
+                    <h6 style="color:#0B2545; font-weight:600;">No consultation records yet</h6>
+                    <p style="font-size:.875rem; color:#64748b; margin-bottom:1rem;">Your medical history will appear here after your first appointment</p>
+                    <a href="/patient/book" class="btn-mc-green" style="text-decoration:none; font-size:.875rem;">
+                        <i class="fas fa-calendar-plus me-1"></i>Book an Appointment
                     </a>
                 </div>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
-    <!-- Prescriptions Tab -->
+    <!-- Prescriptions -->
     <div class="tab-pane fade" id="prescriptions">
-        {% if prescriptions %}
-            <div class="row">
+        <div class="mc-card">
+            {% if prescriptions %}
+                <div style="display:flex; flex-direction:column; gap:.75rem;">
                 {% for rx in prescriptions %}
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="fw-bold text-primary">
-                                <i class="fas fa-pills me-2"></i>{{ rx.medication_name }}
-                            </h5>
-                            <hr>
-                            <div class="row">
-                                <div class="col-6">
-                                    <small class="text-muted">Dosage</small>
-                                    <p class="fw-bold mb-1">{{ rx.dosage }}</p>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Frequency</small>
-                                    <p class="fw-bold mb-1">{{ rx.frequency }}</p>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Duration</small>
-                                    <p class="fw-bold mb-1">{{ rx.duration_days }} days</p>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Issued</small>
-                                    <p class="fw-bold mb-1">
-                                        {{ rx.issued_at.strftime('%d %b %Y') }}
-                                    </p>
-                                </div>
+                <div style="border:1px solid #e5e7eb; border-radius:10px; padding:1.1rem 1.25rem;">
+                    <div class="row align-items-center g-3">
+                        <div class="col-auto">
+                            <div style="width:44px; height:44px; background:#dcfce7; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-pills" style="color:#1A8A4A;"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <span style="font-weight:600; color:#0B2545; font-size:.95rem;">{{ rx.medication_name }}</span>
+                                <span style="background:#dcfce7; color:#166534; font-size:.7rem; padding:.15rem .55rem; border-radius:10px; font-weight:500;">Prescription</span>
+                                {% if rx.appointment and rx.appointment.appointment_date %}
+                                <span style="background:#f3f4f6; color:#6b7280; font-size:.7rem; padding:.15rem .55rem; border-radius:10px;">
+                                    Expires ~{{ (rx.issued_at.date() if rx.issued_at else rx.appointment.appointment_date) }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem; color:#64748b;">
+                                <span><i class="fas fa-calendar me-1"></i>{{ rx.issued_at.strftime('%B %d, %Y') if rx.issued_at else 'N/A' }}</span>
+                                <span>•</span>
+                                <span>{{ rx.dosage }} · {{ rx.frequency }} · {{ rx.duration_days }} days</span>
                             </div>
                             {% if rx.instructions %}
-                            <div class="bg-light p-2 rounded mt-2">
-                                <small>
-                                    <strong>Instructions:</strong> {{ rx.instructions }}
-                                </small>
-                            </div>
+                            <p style="font-size:.8rem; color:#374151; margin:.4rem 0 0; font-style:italic;">{{ rx.instructions }}</p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 {% endfor %}
-            </div>
-        {% else %}
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-pills fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No prescriptions yet</h5>
-                    <p class="text-muted">
-                        Prescriptions issued by your doctor will appear here
-                    </p>
                 </div>
-            </div>
-        {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                        <i class="fas fa-pills" style="font-size:1.5rem; color:#94a3b8;"></i>
+                    </div>
+                    <h6 style="color:#0B2545; font-weight:600;">No prescriptions yet</h6>
+                    <p style="font-size:.875rem; color:#64748b; margin:0;">Prescriptions issued by your doctor will appear here</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
 </div>
 
+<style>
+.nav-link.active { color: #1A5276 !important; border-bottom: 2px solid #1A5276; background: none !important; }
+.nav-link:hover  { color: #0B2545 !important; }
+</style>
 {% endblock %}
-```

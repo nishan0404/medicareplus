@@ -1,230 +1,269 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="row mb-4">
-    <div class="col">
-        <h2 class="fw-bold" style="color:#1A5276;">
-            <i class="fas fa-home me-2"></i>
-            Welcome, {{ current_user.full_name }}!
-        </h2>
-        <p class="text-muted">Here is your health dashboard</p>
+<!-- Page Header -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="mc-page-title mb-0">Welcome back, {{ current_user.full_name.split()[0] }}</h1>
+        <p class="mc-page-sub">Here's your health overview for today</p>
     </div>
-    <div class="col-auto">
-        <a href="/patient/profile" class="btn btn-outline-success">
-            <i class="fas fa-user-edit me-2"></i>My Profile
-        </a>
+    <a href="/patient/profile" class="btn-mc-outline" style="font-size:.875rem; text-decoration:none; display:flex; align-items:center; gap:.5rem;">
+        <i class="fas fa-user-circle"></i> My Profile
+    </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="mc-stat-card">
+            <div class="mc-stat-icon" style="background:#dbeafe;">
+                <i class="fas fa-calendar-check" style="color:#1A5276;"></i>
+            </div>
+            <div>
+                <div class="mc-stat-label">Upcoming Appointments</div>
+                <div class="mc-stat-value">{{ upcoming }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="mc-stat-card">
+            <div class="mc-stat-icon" style="background:#dcfce7;">
+                <i class="fas fa-pills" style="color:#1A8A4A;"></i>
+            </div>
+            <div>
+                <div class="mc-stat-label">Active Prescriptions</div>
+                <div class="mc-stat-value">{{ prescriptions }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="mc-stat-card">
+            <div class="mc-stat-icon" style="background:#e0e7ff;">
+                <i class="fas fa-file-medical" style="color:#0B2545;"></i>
+            </div>
+            <div>
+                <div class="mc-stat-label">Medical Records</div>
+                <div class="mc-stat-value">{{ records }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="mc-stat-card">
+            <div class="mc-stat-icon" style="background:#fef9c3;">
+                <i class="fas fa-stethoscope" style="color:#854d0e;"></i>
+            </div>
+            <div>
+                <div class="mc-stat-label">Symptom Checks</div>
+                <div class="mc-stat-value" style="font-size:1.1rem;">AI Ready</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Stats Cards -->
-<div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card text-center p-3">
-            <div class="card-body">
-                <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
-                <h3 class="fw-bold">{{ upcoming }}</h3>
-                <p class="text-muted mb-0">Upcoming Appointments</p>
+<!-- Main grid: Appointments + Quick Actions -->
+<div class="row g-4 mb-4">
+
+    <!-- Upcoming Appointments -->
+    <div class="col-lg-8">
+        <div class="mc-card h-100">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h2 class="mc-card-header mb-0">
+                    <i class="fas fa-calendar-alt me-2" style="color:#1A5276;"></i>Upcoming Appointments
+                </h2>
+                <a href="/patient/appointments" class="btn-mc-outline" style="font-size:.8rem; text-decoration:none; padding:.35rem .85rem;">
+                    View All
+                </a>
             </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card text-center p-3">
-            <div class="card-body">
-                <i class="fas fa-file-medical fa-3x text-primary mb-3"></i>
-                <h3 class="fw-bold">{{ records }}</h3>
-                <p class="text-muted mb-0">Medical Records</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card text-center p-3">
-            <div class="card-body">
-                <i class="fas fa-pills fa-3x text-warning mb-3"></i>
-                <h3 class="fw-bold">{{ prescriptions }}</h3>
-                <p class="text-muted mb-0">Prescriptions</p>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- ── Upcoming Appointments List ── -->
-<div class="card mb-4 shadow-sm border-0">
-    <div class="card-header d-flex justify-content-between align-items-center"
-         style="background:#1A5276;">
-        <h5 class="mb-0 text-white">
-            <i class="fas fa-calendar-alt me-2"></i>Upcoming Appointments
-        </h5>
-        <a href="/patient/appointments" class="btn btn-sm btn-light">
-            <i class="fas fa-list me-1"></i>View All
-        </a>
-    </div>
-    <div class="card-body p-0">
-        {% if upcoming_appointments %}
-            {% for appt in upcoming_appointments %}
-            <div class="border-bottom px-4 py-3">
-                <div class="row align-items-center">
-
-                    <!-- Date & Time -->
-                    <div class="col-md-3">
-                        <h6 class="fw-bold mb-1
-                            {% if appt.appointment_date == today %}text-success
-                            {% else %}text-primary{% endif %}">
-                            <i class="fas fa-calendar me-1"></i>
-                            {{ appt.appointment_date.strftime('%d %B %Y') }}
-                            {% if appt.appointment_date == today %}
-                                <span class="badge bg-success ms-1" style="font-size:.6rem;">TODAY</span>
-                            {% endif %}
-                        </h6>
-                        <small class="text-muted">
-                            <i class="fas fa-clock me-1"></i>
-                            {{ appt.appointment_time.strftime('%I:%M %p') }}
-                        </small>
-                    </div>
-
-                    <!-- Doctor -->
-                    <div class="col-md-3">
-                        <small class="text-muted d-block">Doctor</small>
-                        <span class="fw-bold">{{ appt.doctor.full_name }}</span>
-                        <br>
-                        <small class="text-muted">{{ appt.doctor.specialisation }}</small>
-                    </div>
-
-                    <!-- Reason -->
-                    <div class="col-md-3">
-                        <small class="text-muted d-block">Reason</small>
-                        <span>{{ appt.reason if appt.reason else 'Not specified' }}</span>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="col-md-3 text-end">
-
-                        {% if call_available[appt.id] %}
-                            {# ── Call window is open ── #}
-                            {% if appt.call_session and appt.call_session.status == 'waiting' %}
-                                <!-- Other party waiting -->
-                                <div class="mb-1">
-                                    <span class="badge bg-danger" style="animation:pulse 1.2s infinite; font-size:.75rem;">
+            {% if upcoming_appointments %}
+                {% for appt in upcoming_appointments %}
+                <div class="mb-3 p-3 rounded-3 border"
+                     style="border-color:#f1f5f9 !important; {% if appt.appointment_date == today %}background:#f0fdf4;{% else %}background:#fafafa;{% endif %}">
+                    <div class="row align-items-center g-2">
+                        <!-- Avatar + Doctor info -->
+                        <div class="col-auto">
+                            <div style="width:50px; height:50px; background:#dbeafe; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                <i class="fas fa-user-md" style="color:#1A5276; font-size:1.1rem;"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="fw-600" style="color:#0B2545; font-weight:600; font-size:.95rem;">
+                                {{ appt.doctor.full_name }}
+                            </div>
+                            <div style="font-size:.8rem; color:#64748b;">{{ appt.doctor.specialisation }}</div>
+                            <div class="d-flex gap-3 mt-1" style="font-size:.8rem; color:#374151;">
+                                <span><i class="fas fa-calendar me-1"></i>{{ appt.appointment_date.strftime('%d %b %Y') }}
+                                    {% if appt.appointment_date == today %}
+                                        <span style="background:#dcfce7; color:#166534; font-size:.65rem; padding:1px 6px; border-radius:10px; font-weight:600; margin-left:4px;">TODAY</span>
+                                    {% endif %}
+                                </span>
+                                <span><i class="fas fa-clock me-1"></i>{{ appt.appointment_time.strftime('%I:%M %p') }}</span>
+                            </div>
+                        </div>
+                        <!-- Action buttons -->
+                        <div class="col-auto">
+                            {% if call_available[appt.id] %}
+                                {% if appt.call_session and appt.call_session.status == 'waiting' %}
+                                <div class="mb-1 text-center">
+                                    <span class="badge bg-danger" style="animation:pulse 1.2s infinite; font-size:.7rem;">
                                         <i class="fas fa-phone-volume me-1"></i>Doctor waiting!
                                     </span>
                                 </div>
                                 <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type=appt.call_session.call_type) }}"
-                                   class="btn btn-success btn-sm">
-                                    <i class="fas fa-{% if appt.call_session.call_type == 'video' %}video{% else %}phone{% endif %} me-1"></i>
-                                    Join {{ appt.call_session.call_type | capitalize }} Call
+                                   class="btn-mc-green d-flex align-items-center gap-1"
+                                   style="font-size:.8rem; text-decoration:none; padding:.4rem .85rem;">
+                                    <i class="fas fa-phone"></i> Join Call
                                 </a>
-
-                            {% elif appt.call_session and appt.call_session.status == 'active' %}
-                                <!-- Rejoin -->
+                                {% elif appt.call_session and appt.call_session.status == 'active' %}
                                 <a href="{{ url_for('call.room', room_id=appt.call_session.room_id) }}"
-                                   class="btn btn-warning btn-sm">
-                                    <i class="fas fa-sign-in-alt me-1"></i>Rejoin Call
+                                   class="btn-mc-blue d-flex align-items-center gap-1"
+                                   style="font-size:.8rem; text-decoration:none; padding:.4rem .85rem;">
+                                    <i class="fas fa-sign-in-alt"></i> Rejoin
                                 </a>
-
-                            {% else %}
-                                <!-- Start a new call -->
-                                <div class="d-flex justify-content-end gap-1">
+                                {% else %}
+                                <div class="d-flex gap-2">
                                     <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type='audio') }}"
-                                       class="btn btn-success btn-sm"
-                                       onclick="return confirm('Start audio call with {{ appt.doctor.full_name }}?')">
-                                        <i class="fas fa-phone me-1"></i>Audio
+                                       class="btn-mc-green d-flex align-items-center gap-1"
+                                       style="font-size:.8rem; text-decoration:none; padding:.4rem .75rem;"
+                                       onclick="return confirm('Start audio call?')">
+                                        <i class="fas fa-phone"></i>
                                     </a>
                                     <a href="{{ url_for('appointment.start_call', appointment_id=appt.id, call_type='video') }}"
-                                       class="btn btn-info btn-sm text-white"
-                                       onclick="return confirm('Start video call with {{ appt.doctor.full_name }}?')">
-                                        <i class="fas fa-video me-1"></i>Video
+                                       class="btn-mc-blue d-flex align-items-center gap-1"
+                                       style="font-size:.8rem; text-decoration:none; padding:.4rem .75rem;"
+                                       onclick="return confirm('Start video call?')">
+                                        <i class="fas fa-video"></i>
                                     </a>
                                 </div>
+                                {% endif %}
+                            {% elif appt.appointment_date == today %}
+                                <small style="font-size:.75rem; color:#64748b;">
+                                    <i class="fas fa-hourglass-half me-1"></i>Opens {{ appt.appointment_time.strftime('%I:%M %p') }}
+                                </small>
+                            {% else %}
+                                <span style="background:#dbeafe; color:#1e40af; font-size:.75rem; padding:.25rem .6rem; border-radius:6px; font-weight:500;">Upcoming</span>
                             {% endif %}
-
-                        {% elif appt.appointment_date == today %}
-                            <!-- Today but not yet time -->
-                            <small class="text-muted">
-                                <i class="fas fa-hourglass-half me-1"></i>
-                                Call opens at {{ appt.appointment_time.strftime('%I:%M %p') }}
-                            </small>
-
-                        {% else %}
-                            <!-- Future date -->
-                            <span class="badge bg-primary">Upcoming</span>
-                        {% endif %}
-
+                        </div>
+                    </div>
+                    <!-- Chat + Cancel row -->
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
+                           class="btn-mc-blue flex-fill text-center text-decoration-none d-flex align-items-center justify-content-center gap-2"
+                           style="padding:.5rem; font-size:.8rem; border-radius:8px;">
+                            <i class="fas fa-comment-dots"></i> Chat
+                        </a>
+                        <button type="button"
+                                onclick="openCancelModal({{ appt.id }}, '{{ appt.doctor.full_name }}', '{{ appt.appointment_date.strftime('%d %b %Y') }} {{ appt.appointment_time.strftime('%I:%M %p') }}')"
+                                style="flex:1; background:#fee2e2; color:#991b1b; border:none; border-radius:8px; padding:.5rem; font-size:.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.4rem;">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                <h6 class="text-muted">No upcoming appointments</h6>
-                <a href="/patient/book" class="btn btn-primary btn-sm mt-2">
-                    <i class="fas fa-plus me-1"></i>Book Now
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                        <i class="fas fa-calendar-times" style="font-size:1.5rem; color:#94a3b8;"></i>
+                    </div>
+                    <h6 style="color:#0B2545; font-weight:600;">No upcoming appointments</h6>
+                    <p style="font-size:.875rem; color:#64748b;">Book an appointment to get started</p>
+                    <a href="/patient/book" class="btn-mc-green" style="text-decoration:none; font-size:.875rem;">
+                        <i class="fas fa-plus me-1"></i>Book Now
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="mc-card mb-3">
+            <h2 class="mc-card-header">Quick Actions</h2>
+            <div class="d-flex flex-column gap-2">
+                <a href="/patient/book"
+                   class="btn-mc-green text-decoration-none text-center py-3"
+                   style="border-radius:8px; font-size:.9rem; font-weight:500;">
+                    <i class="fas fa-calendar-plus me-2"></i>Book Appointment
+                </a>
+                <a href="/patient/symptoms"
+                   class="btn-mc-blue text-decoration-none text-center py-3"
+                   style="border-radius:8px; font-size:.9rem; font-weight:500;">
+                    <i class="fas fa-stethoscope me-2"></i>Check Symptoms
+                </a>
+                <a href="/patient/records"
+                   class="btn-mc-dark text-decoration-none text-center py-3"
+                   style="border-radius:8px; font-size:.9rem; font-weight:500;">
+                    <i class="fas fa-file-medical me-2"></i>View Records
+                </a>
+                <a href="/patient/chats"
+                   class="btn-mc-outline text-decoration-none text-center py-3"
+                   style="border-radius:8px; font-size:.9rem; font-weight:500;">
+                    <i class="fas fa-comments me-2"></i>My Chats
                 </a>
             </div>
-        {% endif %}
+        </div>
+
+        <!-- Health Tip -->
+        <div class="mc-card" style="background:#dbeafe; border-color:#bfdbfe;">
+            <h6 style="color:#0B2545; font-weight:600; margin-bottom:.5rem;">
+                <i class="fas fa-lightbulb me-2" style="color:#1A5276;"></i>Health Tip
+            </h6>
+            <p style="font-size:.85rem; color:#1e3a5f; margin:0;">
+                Remember to drink at least 8 glasses of water daily and maintain regular exercise for optimal health.
+            </p>
+        </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <h5 class="fw-bold text-muted mb-3">Quick Actions</h5>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card p-3 text-center h-100">
-            <div class="card-body">
-                <i class="fas fa-calendar-plus fa-2x text-success mb-3"></i>
-                <h6 class="fw-bold">Book Appointment</h6>
-                <p class="text-muted small">Schedule a visit with a doctor</p>
-                <a href="/patient/book" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i>Book Now
-                </a>
-            </div>
+<!-- Cancellation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+      <div class="modal-header border-0 pb-0" style="background:white; padding:1.5rem 1.5rem .5rem;">
+        <h5 class="modal-title" style="color:#991b1b; font-weight:600;">
+            <i class="fas fa-times-circle me-2"></i>Cancel Appointment
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:1rem 1.5rem 1.5rem;">
+        <p style="font-size:.875rem; margin-bottom:.25rem;">Cancelling appointment with:</p>
+        <p class="fw-bold mb-1" id="cancel-doctor-name" style="color:#0B2545;"></p>
+        <p style="font-size:.85rem; color:#64748b;" id="cancel-appt-time"></p>
+        <div style="background:#fef9c3; border-radius:8px; padding:.75rem 1rem; font-size:.8rem; color:#854d0e; margin-bottom:1rem;">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Cannot cancel within 2 hours of the scheduled time.
         </div>
+        <form id="cancel-form" method="POST">
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:.85rem; font-weight:500; color:#374151; display:block; margin-bottom:.35rem;">Reason (optional)</label>
+            <textarea name="cancellation_reason" rows="3" maxlength="255"
+                      style="width:100%; padding:.65rem 1rem; border:1.5px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; font-family:inherit; resize:none;"
+                      placeholder="e.g. Schedule conflict, feeling better..."></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" style="flex:1; padding:.65rem; background:#ef4444; color:white; border:none; border-radius:8px; font-size:.875rem; font-weight:500; cursor:pointer;">
+                Confirm Cancellation
+            </button>
+            <button type="button" data-bs-dismiss="modal"
+                    style="flex:1; padding:.65rem; background:white; color:#374151; border:1.5px solid #d1d5db; border-radius:8px; font-size:.875rem; cursor:pointer;">
+                Keep Appointment
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="card p-3 text-center h-100">
-            <div class="card-body">
-                <i class="fas fa-stethoscope fa-2x text-danger mb-3"></i>
-                <h6 class="fw-bold">Check Symptoms</h6>
-                <p class="text-muted small">Use our AI symptom checker</p>
-                <a href="/patient/symptoms" class="btn btn-primary btn-sm">
-                    <i class="fas fa-search me-1"></i>Check Now
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card p-3 text-center h-100">
-            <div class="card-body">
-                <i class="fas fa-file-medical fa-2x text-primary mb-3"></i>
-                <h6 class="fw-bold">Medical Records</h6>
-                <p class="text-muted small">View your health history</p>
-                <a href="/patient/records" class="btn btn-primary btn-sm">
-                    <i class="fas fa-eye me-1"></i>View Records
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card p-3 text-center h-100">
-            <div class="card-body">
-                <i class="fas fa-user-edit fa-2x text-warning mb-3"></i>
-                <h6 class="fw-bold">My Profile</h6>
-                <p class="text-muted small">Update your details</p>
-                <a href="/patient/profile" class="btn btn-primary btn-sm">
-                    <i class="fas fa-edit me-1"></i>Edit Profile
-                </a>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
 <style>
-@keyframes pulse {
-    0%   { opacity: 1; }
-    50%  { opacity: 0.4; }
-    100% { opacity: 1; }
-}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 </style>
-
+<script>
+function openCancelModal(apptId, doctorName, apptTime) {
+    document.getElementById('cancel-doctor-name').textContent = doctorName;
+    document.getElementById('cancel-appt-time').textContent   = apptTime;
+    document.getElementById('cancel-form').action = '/patient/appointments/cancel/' + apptId;
+    new bootstrap.Modal(document.getElementById('cancelModal')).show();
+}
+</script>
 {% endblock %}
