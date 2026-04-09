@@ -188,6 +188,19 @@
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('date_filter').value = today;
 
+// Auto-select specialty if arriving from symptom results
+const specParam = new URLSearchParams(window.location.search).get('spec');
+if (specParam) {
+    const sel = document.getElementById('specialisation_filter');
+    for (let opt of sel.options) {
+        if (opt.value.toLowerCase() === specParam.toLowerCase()) {
+            opt.selected = true;
+            break;
+        }
+    }
+    searchDoctors();
+}
+
 function toggleBookingForm(doctorId, card) {
     const form  = document.getElementById('form-' + doctorId);
     const check = document.getElementById('check-' + doctorId);

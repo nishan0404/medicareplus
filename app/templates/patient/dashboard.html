@@ -7,9 +7,6 @@
         <h1 class="mc-page-title mb-0">Welcome back, {{ current_user.full_name.split()[0] }}</h1>
         <p class="mc-page-sub">Here's your health overview for today</p>
     </div>
-    <a href="/patient/profile" class="btn-mc-outline" style="font-size:.875rem; text-decoration:none; display:flex; align-items:center; gap:.5rem;">
-        <i class="fas fa-user-circle"></i> My Profile
-    </a>
 </div>
 
 <!-- Stat Cards -->
@@ -53,19 +50,29 @@
                 <i class="fas fa-stethoscope" style="color:#854d0e;"></i>
             </div>
             <div>
-                <div class="mc-stat-label">Symptom Checks</div>
-                <div class="mc-stat-value" style="font-size:1.1rem;">AI Ready</div>
+                <div class="mc-stat-label">Last Symptom Check</div>
+                <div class="mc-stat-value" style="font-size:.95rem;">
+                    {% if last_symptom %}
+                        {% set delta = (now - last_symptom.checked_at).days %}
+                        {% if delta == 0 %}Today
+                        {% elif delta == 1 %}1d ago
+                        {% else %}{{ delta }}d ago
+                        {% endif %}
+                    {% else %}
+                        None yet
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Main grid: Appointments + Quick Actions -->
-<div class="row g-4 mb-4">
+<!-- Main grid -->
+<div class="row g-4">
 
-    <!-- Upcoming Appointments -->
+    <!-- Left: Upcoming Appointments -->
     <div class="col-lg-8">
-        <div class="mc-card h-100">
+        <div class="mc-card">
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <h2 class="mc-card-header mb-0">
                     <i class="fas fa-calendar-alt me-2" style="color:#1A5276;"></i>Upcoming Appointments
@@ -80,27 +87,31 @@
                 <div class="mb-3 p-3 rounded-3 border"
                      style="border-color:#f1f5f9 !important; {% if appt.appointment_date == today %}background:#f0fdf4;{% else %}background:#fafafa;{% endif %}">
                     <div class="row align-items-center g-2">
-                        <!-- Avatar + Doctor info -->
+                        <!-- Avatar -->
                         <div class="col-auto">
                             <div style="width:50px; height:50px; background:#dbeafe; border-radius:50%; display:flex; align-items:center; justify-content:center;">
                                 <i class="fas fa-user-md" style="color:#1A5276; font-size:1.1rem;"></i>
                             </div>
                         </div>
+                        <!-- Info -->
                         <div class="col">
-                            <div class="fw-600" style="color:#0B2545; font-weight:600; font-size:.95rem;">
+                            <div style="color:#0B2545; font-weight:600; font-size:.95rem;">
                                 {{ appt.doctor.full_name }}
                             </div>
                             <div style="font-size:.8rem; color:#64748b;">{{ appt.doctor.specialisation }}</div>
-                            <div class="d-flex gap-3 mt-1" style="font-size:.8rem; color:#374151;">
-                                <span><i class="fas fa-calendar me-1"></i>{{ appt.appointment_date.strftime('%d %b %Y') }}
+                            <div class="d-flex flex-wrap gap-2 mt-1" style="font-size:.8rem; color:#374151;">
+                                <span><i class="fas fa-calendar me-1"></i>{{ appt.appointment_date.strftime('%B %d, %Y') }}
                                     {% if appt.appointment_date == today %}
                                         <span style="background:#dcfce7; color:#166534; font-size:.65rem; padding:1px 6px; border-radius:10px; font-weight:600; margin-left:4px;">TODAY</span>
                                     {% endif %}
                                 </span>
                                 <span><i class="fas fa-clock me-1"></i>{{ appt.appointment_time.strftime('%I:%M %p') }}</span>
+                                <span style="background:#f1f5f9; color:#374151; font-size:.7rem; padding:.15rem .5rem; border-radius:6px;">
+                                    {% if appt.appointment_type %}{{ appt.appointment_type }}{% else %}In-person{% endif %}
+                                </span>
                             </div>
                         </div>
-                        <!-- Action buttons -->
+                        <!-- Call buttons -->
                         <div class="col-auto">
                             {% if call_available[appt.id] %}
                                 {% if appt.call_session and appt.call_session.status == 'waiting' %}
@@ -145,6 +156,7 @@
                             {% endif %}
                         </div>
                     </div>
+
                     <!-- Chat + Cancel row -->
                     <div class="d-flex gap-2 mt-3">
                         <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
@@ -175,8 +187,10 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
+    <!-- Right sidebar -->
     <div class="col-lg-4">
+
+        <!-- Quick Actions -->
         <div class="mc-card mb-3">
             <h2 class="mc-card-header">Quick Actions</h2>
             <div class="d-flex flex-column gap-2">
@@ -195,22 +209,47 @@
                    style="border-radius:8px; font-size:.9rem; font-weight:500;">
                     <i class="fas fa-file-medical me-2"></i>View Records
                 </a>
-                <a href="/patient/chats"
-                   class="btn-mc-outline text-decoration-none text-center py-3"
-                   style="border-radius:8px; font-size:.9rem; font-weight:500;">
-                    <i class="fas fa-comments me-2"></i>My Chats
-                </a>
             </div>
         </div>
 
         <!-- Health Tip -->
-        <div class="mc-card" style="background:#dbeafe; border-color:#bfdbfe;">
+        <div class="mc-card mb-3" style="background:#dbeafe; border-color:#bfdbfe;">
             <h6 style="color:#0B2545; font-weight:600; margin-bottom:.5rem;">
                 <i class="fas fa-lightbulb me-2" style="color:#1A5276;"></i>Health Tip
             </h6>
             <p style="font-size:.85rem; color:#1e3a5f; margin:0;">
-                Remember to drink at least 8 glasses of water daily and maintain regular exercise for optimal health.
+                Remember to drink at least 8 glasses of water daily for optimal health.
             </p>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="mc-card">
+            <h2 class="mc-card-header mb-3">Recent Activity</h2>
+            {% if recent_activity %}
+                <div style="display:flex; flex-direction:column; gap:.75rem;">
+                {% for item in recent_activity %}
+                <div style="display:flex; align-items:flex-start; gap:.75rem;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:.1rem;">
+                        <i class="fas {{ item.icon }}" style="font-size:.75rem; color:{{ item.color }};"></i>
+                    </div>
+                    <div>
+                        <p style="font-size:.82rem; color:#374151; margin:0; line-height:1.4;">{{ item.text }}</p>
+                        <span style="font-size:.75rem; color:#9ca3af;">
+                            {% set delta = (now - item.ts).days %}
+                            {% if delta == 0 %}Today
+                            {% elif delta == 1 %}1 day ago
+                            {% elif delta < 7 %}{{ delta }} days ago
+                            {% elif delta < 14 %}1 week ago
+                            {% else %}{{ (delta // 7) }} weeks ago
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p style="font-size:.85rem; color:#9ca3af; text-align:center; padding:1rem 0; margin:0;">No recent activity yet</p>
+            {% endif %}
         </div>
     </div>
 </div>

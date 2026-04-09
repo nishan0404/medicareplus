@@ -36,6 +36,55 @@ def dashboard():
     from app.routes.appointment import is_call_available
     call_available = {appt.id: is_call_available(appt) for appt in upcoming_appointments}
 
+    # Last symptom check
+    last_symptom = SymptomLog.query.filter_by(patient_id=current_user.id)\
+        .order_by(SymptomLog.checked_at.desc()).first()
+
+    # Recent activity feed (last 5 events merged from appointments, symptoms, prescriptions)
+    recent_activity = []
+
+    completed_appts = Appointment.query.filter_by(
+        patient_id=current_user.id, status='Completed'
+    ).order_by(Appointment.appointment_date.desc()).limit(3).all()
+    for a in completed_appts:
+        recent_activity.append({
+            'icon': 'fa-calendar-check', 'color': '#1A5276',
+            'text': f'Completed appointment with {a.doctor.full_name}',
+            'ts': datetime.combine(a.appointment_date, a.appointment_time)
+        })
+
+    booked_appts = Appointment.query.filter_by(
+        patient_id=current_user.id, status='Upcoming'
+    ).order_by(Appointment.appointment_date.asc()).limit(2).all()
+    for a in booked_appts:
+        recent_activity.append({
+            'icon': 'fa-calendar-plus', 'color': '#1A8A4A',
+            'text': f'Booked appointment with {a.doctor.full_name}',
+            'ts': datetime.combine(a.appointment_date, a.appointment_time)
+        })
+
+    sym_logs = SymptomLog.query.filter_by(patient_id=current_user.id)\
+        .order_by(SymptomLog.checked_at.desc()).limit(3).all()
+    for s in sym_logs:
+        urgency = s.urgency_level or 'Unknown'
+        recent_activity.append({
+            'icon': 'fa-stethoscope', 'color': '#854d0e',
+            'text': f'Symptom check completed – {urgency} urgency',
+            'ts': s.checked_at
+        })
+
+    rxs = Prescription.query.filter_by(patient_id=current_user.id)\
+        .order_by(Prescription.issued_at.desc()).limit(2).all()
+    for rx in rxs:
+        recent_activity.append({
+            'icon': 'fa-pills', 'color': '#7c3aed',
+            'text': f'Prescription issued: {rx.medication_name}',
+            'ts': rx.issued_at
+        })
+
+    recent_activity.sort(key=lambda x: x['ts'] or datetime.min, reverse=True)
+    recent_activity = recent_activity[:5]
+
     return render_template('patient/dashboard.html',
         title='Dashboard',
         upcoming_appointments=upcoming_appointments,
@@ -43,7 +92,10 @@ def dashboard():
         prescriptions=prescriptions,
         records=records,
         today=today,
-        call_available=call_available
+        call_available=call_available,
+        last_symptom=last_symptom,
+        recent_activity=recent_activity,
+        now=datetime.now()
     )
 
 
