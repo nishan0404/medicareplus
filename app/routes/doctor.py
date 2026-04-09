@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app import db
+from app import db, bcrypt
 from app.models import Doctor, Appointment, Patient, ConsultationNote, Prescription, ChatMessage
 from datetime import datetime, date, timedelta
 
@@ -41,22 +41,50 @@ def dashboard():
 
     total_today     = len(todays_appts)
     upcoming_today  = sum(1 for a in todays_appts if a.status == 'Upcoming')
+    in_progress_today = sum(1 for a in todays_appts if a.status == 'In-Progress')
     completed_today = sum(1 for a in todays_appts if a.status == 'Completed')
 
     from app.routes.appointment import is_call_available, is_chat_available
     call_available = {a.id: is_call_available(a) for a in todays_appts}
     chat_available = {a.id: is_chat_available(a) for a in todays_appts}
 
+    # This week's stats (Mon–Sun of current week)
+    week_start = today - timedelta(days=today.weekday())
+    week_appts = Appointment.query.filter(
+        Appointment.doctor_id == current_user.id,
+        Appointment.appointment_date >= week_start,
+        Appointment.appointment_date <= today,
+    ).all()
+    week_total     = len(week_appts)
+    week_completed = sum(1 for a in week_appts if a.status == 'Completed')
+    week_cancelled = sum(1 for a in week_appts if a.status == 'Cancelled')
+    week_rescheduled = 0  # placeholder — no reschedule concept yet
+
+    # Appointments with no notes yet (completed but missing ConsultationNote)
+    pending_notes = Appointment.query.filter(
+        Appointment.doctor_id == current_user.id,
+        Appointment.status == 'Completed',
+    ).filter(
+        ~Appointment.notes.has()
+    ).order_by(Appointment.appointment_date.desc()).limit(5).all()
+
     return render_template('doctor/dashboard.html',
-        title           = 'Doctor Dashboard',
-        today           = today_str,
-        appointments    = todays_appts,
-        upcoming_appts  = upcoming_appts,
-        total_today     = total_today,
-        upcoming_today  = upcoming_today,
-        completed_today = completed_today,
-        call_available  = call_available,
-        chat_available  = chat_available,
+        title             = 'Doctor Dashboard',
+        today             = today_str,
+        today_date        = today,
+        appointments      = todays_appts,
+        upcoming_appts    = upcoming_appts,
+        total_today       = total_today,
+        upcoming_today    = upcoming_today,
+        in_progress_today = in_progress_today,
+        completed_today   = completed_today,
+        call_available    = call_available,
+        chat_available    = chat_available,
+        week_total        = week_total,
+        week_completed    = week_completed,
+        week_cancelled    = week_cancelled,
+        week_rescheduled  = week_rescheduled,
+        pending_notes     = pending_notes,
     )
 
 
@@ -259,4 +287,67 @@ def patient_history(patient_id):
         title        = f'History — {patient.full_name}',
         patient      = patient,
         appointments = appointments,
+    )
+
+
+@doctor.route('/doctor/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if current_user.role != 'doctor':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'update_profile':
+            full_name      = request.form.get('full_name', '').strip()
+            specialisation = request.form.get('specialisation', '').strip()
+            phone          = request.form.get('phone', '').strip()
+            bio            = request.form.get('bio', '').strip()
+
+            if not full_name or not specialisation:
+                flash('Name and specialisation are required.', 'danger')
+                return redirect(url_for('doctor.profile'))
+
+            current_user.full_name      = full_name[:100]
+            current_user.specialisation = specialisation[:100]
+            current_user.phone          = phone[:20]
+            current_user.bio            = bio[:1000]
+            db.session.commit()
+            flash('Profile updated successfully.', 'success')
+
+        elif action == 'change_password':
+            current_pw = request.form.get('current_password', '')
+            new_pw     = request.form.get('new_password', '')
+            confirm_pw = request.form.get('confirm_password', '')
+
+            if not bcrypt.check_password_hash(current_user.password_hash, current_pw):
+                flash('Current password is incorrect.', 'danger')
+                return redirect(url_for('doctor.profile'))
+
+            if len(new_pw) < 8:
+                flash('New password must be at least 8 characters.', 'danger')
+                return redirect(url_for('doctor.profile'))
+
+            if new_pw != confirm_pw:
+                flash('New passwords do not match.', 'danger')
+                return redirect(url_for('doctor.profile'))
+
+            current_user.password_hash = bcrypt.generate_password_hash(new_pw).decode('utf-8')
+            db.session.commit()
+            flash('Password changed successfully.', 'success')
+
+        return redirect(url_for('doctor.profile'))
+
+    total_patients = db.session.query(Appointment.patient_id).filter_by(
+        doctor_id=current_user.id
+    ).distinct().count()
+
+    total_appointments = Appointment.query.filter_by(doctor_id=current_user.id).count()
+
+    return render_template('doctor/profile.html',
+        title             = 'My Profile',
+        total_patients    = total_patients,
+        total_appointments= total_appointments,
     )

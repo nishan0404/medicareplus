@@ -15,43 +15,26 @@ CONSULTATION_FEE = 7500
 
 
 def is_call_available(appt):
-    """Call window: only for Video Call appointments, on appointment DAY, 5 min before to 60 min after."""
-    # In-person appointments never have a call
+    """Call available all day on appointment date for Video Call appointments only."""
     appt_type = getattr(appt, 'appointment_type', None) or 'In-person'
     if appt_type != 'Video Call':
         return False
-
-    now   = datetime.now()
-    today = date.today()
-
-    if appt.appointment_date != today:
+    if appt.status == 'Cancelled':
         return False
-
-    appt_dt = datetime.combine(appt.appointment_date, appt.appointment_time)
-    diff    = (now - appt_dt).total_seconds()
-    return -300 <= diff <= 3600
+    return appt.appointment_date == date.today()
 
 
 def is_chat_available(appt):
-    """Chat window: only on appointment DAY, 30 min before to 30 min after completion."""
-    now     = datetime.now()
-    today   = date.today()
-
-    # Must be the actual appointment date
-    if appt.appointment_date != today:
+    """Chat available all day on appointment date (and day after for completed ones)."""
+    if appt.status == 'Cancelled':
         return False
-
-    appt_dt = datetime.combine(appt.appointment_date, appt.appointment_time)
-
-    if now < appt_dt - timedelta(minutes=30):
-        return False
-
-    if appt.status in ('Completed', 'Cancelled'):
-        if appt.completed_at:
-            return now <= appt.completed_at + timedelta(minutes=30)
-        return False
-
-    return True
+    today = date.today()
+    # Allow chat on the appointment day, and the day after if completed
+    if appt.appointment_date == today:
+        return True
+    if appt.status == 'Completed' and appt.appointment_date == today - timedelta(days=1):
+        return True
+    return False
 
 
 def create_call_session(appt, call_type):

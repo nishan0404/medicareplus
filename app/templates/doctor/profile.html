@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="mc-page-title mb-0"><i class="fas fa-user-md me-2" style="color:#1A5276;"></i>My Profile</h1>
+        <p class="mc-page-sub">Manage your personal and professional details</p>
+    </div>
+    <a href="/doctor/dashboard" class="btn-mc-outline" style="font-size:.875rem; text-decoration:none; display:flex; align-items:center; gap:.5rem;">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div style="background:{{ '#dcfce7' if category == 'success' else '#fee2e2' }}; border-left:4px solid {{ '#1A8A4A' if category == 'success' else '#ef4444' }}; border-radius:8px; padding:.875rem 1.1rem; margin-bottom:1rem; font-size:.875rem; color:{{ '#166534' if category == 'success' else '#991b1b' }};">
+            <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }} me-2"></i>{{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+
+    <!-- Left: Avatar + Stats -->
+    <div class="col-lg-4">
+
+        <!-- Doctor card -->
+        <div class="mc-card text-center mb-3">
+            <div style="width:88px; height:88px; background:#dbeafe; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                <span style="font-size:2rem; font-weight:700; color:#1A5276;">
+                    {{ current_user.full_name.split()[0][0] }}{{ current_user.full_name.split()[-1][0] if current_user.full_name.split()|length > 1 else '' }}
+                </span>
+            </div>
+            <h3 style="font-size:1.1rem; font-weight:700; color:#0B2545; margin-bottom:.25rem;">{{ current_user.full_name }}</h3>
+            <span style="background:#dcfce7; color:#166534; font-size:.8rem; padding:.25rem .75rem; border-radius:20px; font-weight:500;">
+                {{ current_user.specialisation }}
+            </span>
+            <p style="font-size:.82rem; color:#64748b; margin-top:.75rem; margin-bottom:0;">{{ current_user.email }}</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="mc-card mb-3">
+            <h3 style="font-size:.875rem; font-weight:600; color:#0B2545; margin-bottom:.875rem;">Practice Summary</h3>
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom:1px solid #f1f5f9;">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:36px; height:36px; background:#dbeafe; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-users" style="color:#1A5276; font-size:.85rem;"></i>
+                    </div>
+                    <span style="font-size:.875rem; color:#374151;">Total Patients</span>
+                </div>
+                <span style="font-size:1.1rem; font-weight:700; color:#0B2545;">{{ total_patients }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:36px; height:36px; background:#dcfce7; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-calendar-check" style="color:#1A8A4A; font-size:.85rem;"></i>
+                    </div>
+                    <span style="font-size:.875rem; color:#374151;">Appointments</span>
+                </div>
+                <span style="font-size:1.1rem; font-weight:700; color:#0B2545;">{{ total_appointments }}</span>
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="mc-card">
+            <h3 style="font-size:.95rem; font-weight:600; color:#0B2545; margin-bottom:1rem;">
+                <i class="fas fa-lock me-2" style="color:#1A5276;"></i>Change Password
+            </h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="change_password">
+                <div class="mb-3">
+                    <label class="mc-label">Current Password</label>
+                    <input type="password" name="current_password" class="form-control" required placeholder="Enter current password">
+                </div>
+                <div class="mb-3">
+                    <label class="mc-label">New Password</label>
+                    <input type="password" name="new_password" id="newPw" class="form-control" required placeholder="Min. 8 characters"
+                           oninput="checkPwStrength()">
+                    <div style="height:4px; background:#f1f5f9; border-radius:2px; margin-top:.5rem; overflow:hidden;">
+                        <div id="pwStrengthBar" style="height:100%; width:0%; border-radius:2px; transition:all .3s;"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="mc-label">Confirm New Password</label>
+                    <input type="password" name="confirm_password" id="confirmPw" class="form-control" required placeholder="Repeat new password"
+                           oninput="checkPwMatch()">
+                    <p id="pwMatchMsg" style="font-size:.75rem; margin:.25rem 0 0; display:none;"></p>
+                </div>
+                <button type="submit" class="btn-mc-blue" style="width:100%; border:none; padding:.65rem; border-radius:8px; font-size:.875rem; cursor:pointer;">
+                    <i class="fas fa-key me-2"></i>Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right: Edit Details -->
+    <div class="col-lg-8">
+        <div class="mc-card">
+            <h2 class="mc-card-header mb-4">
+                <i class="fas fa-edit me-2" style="color:#1A5276;"></i>Professional Details
+            </h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="update_profile">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="mc-label">Full Name <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="full_name" class="form-control" required maxlength="100"
+                               value="{{ current_user.full_name }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="mc-label">Specialisation <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="specialisation" class="form-control" required maxlength="100"
+                               value="{{ current_user.specialisation }}">
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="mc-label">Email Address</label>
+                        <input type="email" class="form-control" value="{{ current_user.email }}" disabled
+                               style="background:#f8fafc; color:#94a3b8; cursor:not-allowed;">
+                        <small style="font-size:.75rem; color:#9ca3af;">Email cannot be changed. Contact admin.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="mc-label">Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" maxlength="20"
+                               value="{{ current_user.phone or '' }}" placeholder="+61 400 000 000">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="mc-label">
+                        Professional Bio
+                        <span style="font-weight:400; color:#9ca3af;">(optional — shown to patients)</span>
+                    </label>
+                    <textarea name="bio" class="form-control" rows="5" maxlength="1000"
+                              id="bioText" oninput="updateBioCount()"
+                              placeholder="Describe your experience, expertise, and approach to patient care...">{{ current_user.bio or '' }}</textarea>
+                    <div class="d-flex justify-content-end mt-1">
+                        <span style="font-size:.75rem; color:#9ca3af;" id="bioCount">{{ (current_user.bio or '')|length }}/1000</span>
+                    </div>
+                </div>
+
+                <!-- Preview card -->
+                <div style="background:#f8fafc; border-radius:10px; padding:1rem 1.25rem; margin-bottom:1.25rem; border:1px dashed #e2e8f0;">
+                    <p style="font-size:.75rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem;">Patient-facing preview</p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:44px; height:44px; background:#dbeafe; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <span style="font-size:1rem; font-weight:700; color:#1A5276;" id="previewInitials">
+                                {{ current_user.full_name.split()[0][0] }}{{ current_user.full_name.split()[-1][0] if current_user.full_name.split()|length > 1 else '' }}
+                            </span>
+                        </div>
+                        <div>
+                            <p style="font-size:.9rem; font-weight:600; color:#0B2545; margin:0;" id="previewName">{{ current_user.full_name }}</p>
+                            <span style="background:#dcfce7; color:#166534; font-size:.72rem; padding:.15rem .55rem; border-radius:10px;" id="previewSpec">{{ current_user.specialisation }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn-mc-green" style="padding:.7rem 2rem; border:none; border-radius:8px; font-size:.9rem; font-weight:600; cursor:pointer;">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="/doctor/dashboard" class="btn-mc-outline" style="padding:.7rem 1.5rem; text-decoration:none; border-radius:8px; font-size:.9rem;">
+                        Discard
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateBioCount() {
+    const len = document.getElementById('bioText').value.length;
+    document.getElementById('bioCount').textContent = len + '/1000';
+}
+
+// Live preview
+document.querySelector('[name="full_name"]').addEventListener('input', function() {
+    const parts = this.value.trim().split(' ').filter(Boolean);
+    const initials = (parts[0]?.[0] || '') + (parts[parts.length - 1]?.[0] || (parts.length > 1 ? '' : ''));
+    document.getElementById('previewInitials').textContent = initials.toUpperCase();
+    document.getElementById('previewName').textContent     = this.value;
+});
+document.querySelector('[name="specialisation"]').addEventListener('input', function() {
+    document.getElementById('previewSpec').textContent = this.value;
+});
+
+function checkPwStrength() {
+    const pw  = document.getElementById('newPw').value;
+    const bar = document.getElementById('pwStrengthBar');
+    let score = 0;
+    if (pw.length >= 8)  score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const colors = ['#ef4444','#f59e0b','#f59e0b','#1A8A4A','#1A8A4A'];
+    bar.style.width     = (score * 25) + '%';
+    bar.style.background = colors[score];
+}
+
+function checkPwMatch() {
+    const pw1 = document.getElementById('newPw').value;
+    const pw2 = document.getElementById('confirmPw').value;
+    const msg = document.getElementById('pwMatchMsg');
+    if (!pw2) { msg.style.display = 'none'; return; }
+    msg.style.display = 'block';
+    if (pw1 === pw2) {
+        msg.textContent = 'Passwords match';
+        msg.style.color = '#1A8A4A';
+    } else {
+        msg.textContent = 'Passwords do not match';
+        msg.style.color = '#ef4444';
+    }
+}
+</script>
+{% endblock %}
