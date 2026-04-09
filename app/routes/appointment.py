@@ -15,11 +15,15 @@ CONSULTATION_FEE = 7500
 
 
 def is_call_available(appt):
-    """Call window: only on appointment DAY, 5 min before to 60 min after appointment time."""
-    now     = datetime.now()
-    today   = date.today()
+    """Call window: only for Video Call appointments, on appointment DAY, 5 min before to 60 min after."""
+    # In-person appointments never have a call
+    appt_type = getattr(appt, 'appointment_type', None) or 'In-person'
+    if appt_type != 'Video Call':
+        return False
 
-    # Must be the actual appointment date
+    now   = datetime.now()
+    today = date.today()
+
     if appt.appointment_date != today:
         return False
 

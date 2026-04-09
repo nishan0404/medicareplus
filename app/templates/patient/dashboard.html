@@ -147,7 +147,7 @@
                                     </a>
                                 </div>
                                 {% endif %}
-                            {% elif appt.appointment_date == today %}
+                            {% elif appt.appointment_date == today and appt.appointment_type == 'Video Call' %}
                                 <small style="font-size:.75rem; color:#64748b;">
                                     <i class="fas fa-hourglass-half me-1"></i>Opens {{ appt.appointment_time.strftime('%I:%M %p') }}
                                 </small>
