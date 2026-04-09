@@ -399,7 +399,10 @@ function endCall() {
   if (!confirm('Are you sure you want to end this call?')) return;
   socket.emit('end_call', { room_id: ROOM_ID });
   stopTimer();
-  document.getElementById('end-form').submit();
+  // Use fetch POST then redirect — avoids browser issues with form.submit()
+  fetch(document.getElementById('end-form').action, { method: 'POST' })
+    .then(() => { window.location.href = USER_ROLE === 'doctor' ? '/doctor/dashboard' : '/patient/appointments'; })
+    .catch(() => { window.location.href = '/call/end/' + ROOM_ID; });
 }
 
 function startTimer() {

@@ -133,6 +133,15 @@
                     <!-- Actions -->
                     <div style="flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:.35rem; min-width:140px;">
 
+                        {# ── Patient started a call — show Join regardless of appt status ── #}
+                        {% if appt.call_session and appt.call_session.status in ('waiting', 'active') and call_available[appt.id] %}
+                            <a href="{{ url_for('appointment.doctor_join_call', appointment_id=appt.id) }}"
+                               style="width:100%; font-size:.78rem; padding:.45rem .75rem; background:#1A8A4A; color:white; border-radius:6px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:.35rem; font-weight:600; animation:pulse 1.5s infinite;">
+                                <i class="fas fa-phone"></i>
+                                {% if appt.call_session.status == 'waiting' %}Join Call{% else %}Rejoin Call{% endif %}
+                            </a>
+                        {% endif %}
+
                         {% if appt.status == 'Completed' %}
                             <a href="/doctor/appointment/{{ appt.id }}/notes"
                                style="font-size:.78rem; padding:.3rem .75rem; background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; border-radius:6px; text-decoration:none; display:flex; align-items:center; gap:.35rem;">
@@ -140,7 +149,6 @@
                             </a>
 
                         {% elif appt.status == 'Upcoming' %}
-                            <!-- Start button -->
                             <form method="POST" action="/doctor/appointment/{{ appt.id }}/status" style="width:100%;">
                                 <input type="hidden" name="status" value="In-Progress">
                                 <button type="submit"
@@ -148,7 +156,6 @@
                                     <i class="fas fa-play"></i> Start
                                 </button>
                             </form>
-                            <!-- Chat if open -->
                             {% if chat_available and chat_available[appt.id] %}
                             <a href="{{ url_for('chat.room', appointment_id=appt.id) }}"
                                style="width:100%; font-size:.78rem; padding:.3rem .75rem; background:#ede9fe; color:#5b21b6; border:none; border-radius:6px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:.35rem;">
@@ -171,30 +178,23 @@
                                 <i class="fas fa-comment-dots"></i> Chat
                             </a>
                             {% endif %}
-                            {% if call_available and call_available[appt.id] %}
-                                {% if appt.call_session and appt.call_session.status == 'waiting' %}
-                                <a href="{{ url_for('appointment.doctor_join_call', appointment_id=appt.id) }}"
-                                   style="width:100%; font-size:.78rem; padding:.3rem .75rem; background:#dcfce7; color:#166534; border-radius:6px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:.35rem;">
-                                    <i class="fas fa-phone"></i> Join Call
+                            {# Start call buttons only if no active session yet #}
+                            {% if call_available[appt.id] and (not appt.call_session or appt.call_session.status == 'ended') %}
+                            <div class="d-flex gap-1" style="width:100%;">
+                                <a href="{{ url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='audio') }}"
+                                   style="flex:1; font-size:.78rem; padding:.3rem .5rem; background:#dcfce7; color:#166534; border-radius:6px; text-decoration:none; text-align:center;"
+                                   onclick="return confirm('Start audio call?')">
+                                    <i class="fas fa-phone"></i>
                                 </a>
-                                {% else %}
-                                <div class="d-flex gap-1" style="width:100%;">
-                                    <a href="{{ url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='audio') }}"
-                                       style="flex:1; font-size:.78rem; padding:.3rem .5rem; background:#dcfce7; color:#166534; border-radius:6px; text-decoration:none; text-align:center;"
-                                       onclick="return confirm('Start audio call?')">
-                                        <i class="fas fa-phone"></i>
-                                    </a>
-                                    <a href="{{ url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='video') }}"
-                                       style="flex:1; font-size:.78rem; padding:.3rem .5rem; background:#dbeafe; color:#1e40af; border-radius:6px; text-decoration:none; text-align:center;"
-                                       onclick="return confirm('Start video call?')">
-                                        <i class="fas fa-video"></i>
-                                    </a>
-                                </div>
-                                {% endif %}
+                                <a href="{{ url_for('appointment.doctor_start_call', appointment_id=appt.id, call_type='video') }}"
+                                   style="flex:1; font-size:.78rem; padding:.3rem .5rem; background:#dbeafe; color:#1e40af; border-radius:6px; text-decoration:none; text-align:center;"
+                                   onclick="return confirm('Start video call?')">
+                                    <i class="fas fa-video"></i>
+                                </a>
+                            </div>
                             {% endif %}
                         {% endif %}
 
-                        <!-- History always visible -->
                         <a href="/doctor/patient/{{ appt.patient_id }}/history"
                            style="font-size:.75rem; color:#64748b; text-decoration:none; display:flex; align-items:center; gap:.3rem;">
                             <i class="fas fa-history"></i> History

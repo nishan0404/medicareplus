@@ -75,13 +75,17 @@ def room(appointment_id):
 
     room_key = chat_room_key(appointment_id)
 
+    from app.routes.appointment import is_call_available
+    call_available = is_call_available(appt)
+
     return render_template('chat/room.html',
-        title      = 'Live Chat',
-        appt       = appt,
-        messages   = messages,
-        user_role  = user_role,
-        room_key   = room_key,
-        chat_open  = True,
+        title          = 'Live Chat',
+        appt           = appt,
+        messages       = messages,
+        user_role      = user_role,
+        room_key       = room_key,
+        chat_open      = True,
+        call_available = call_available,
     )
 
 
@@ -164,6 +168,47 @@ def upload_file(appointment_id):
         'sent_at'  : new_msg.sent_at.strftime('%I:%M %p'),
         'sender'   : current_user.full_name,
         'role'     : user_role,
+    })
+
+
+@chat.route('/chat/<int:appointment_id>/send', methods=['POST'])
+@login_required
+def send_message_http(appointment_id):
+    """HTTP fallback for sending messages when WebSocket is unavailable."""
+    appt      = Appointment.query.get_or_404(appointment_id)
+    user_role = current_user.role
+
+    allowed = (
+        (user_role == 'patient' and appt.patient_id == current_user.id) or
+        (user_role == 'doctor'  and appt.doctor_id  == current_user.id)
+    )
+    if not allowed:
+        return jsonify({'error': 'Unauthorised'}), 403
+
+    if not is_chat_open(appt):
+        return jsonify({'error': 'Chat is closed'}), 403
+
+    data    = request.get_json(silent=True) or {}
+    message = (data.get('message') or '').strip()[:2000]
+    if not message:
+        return jsonify({'error': 'Empty message'}), 400
+
+    new_msg = ChatMessage(
+        appointment_id = appointment_id,
+        sender_id      = current_user.id,
+        sender_role    = user_role,
+        sender_name    = current_user.full_name,
+        message        = message,
+        msg_type       = 'text',
+        is_read        = False,
+    )
+    db.session.add(new_msg)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'msg_id' : new_msg.id,
+        'sent_at': new_msg.sent_at.strftime('%I:%M %p'),
     })
 
 

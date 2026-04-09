@@ -80,21 +80,18 @@ def room(room_id):
 # HTTP — End Call (POST from button)
 # ─────────────────────────────────────
 
-@call.route('/call/end/<room_id>', methods=['POST'])
+@call.route('/call/end/<room_id>', methods=['POST', 'GET'])
 @login_required
 def end_call(room_id):
-    """
-    Mark the CallSession as ended and record duration.
-    Called when either party clicks the red 'End Call' button.
-    """
-    session = CallSession.query.filter_by(room_id=room_id).first_or_404()
+    """Mark the CallSession as ended and record duration."""
+    call_session = CallSession.query.filter_by(room_id=room_id).first_or_404()
 
-    if session.status != 'ended':
-        session.status   = 'ended'
-        session.ended_at = datetime.utcnow()
-        if session.started_at:
-            delta = session.ended_at - session.started_at
-            session.duration_secs = int(delta.total_seconds())
+    if call_session.status != 'ended':
+        call_session.status   = 'ended'
+        call_session.ended_at = datetime.utcnow()
+        if call_session.started_at:
+            delta = call_session.ended_at - call_session.started_at
+            call_session.duration_secs = int(delta.total_seconds())
         db.session.commit()
 
     flash('Call ended.', 'info')
