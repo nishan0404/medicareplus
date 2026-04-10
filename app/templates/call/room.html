@@ -274,15 +274,15 @@ socket.on('peer_joined', async () => {
   startTimer();
   updateAudioStatusText('Connected — call in progress');
 
-  if (USER_ROLE === 'patient') {
-    await createPeerConnection();
-    const offer = await peerConn.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: IS_VIDEO
-    });
-    await peerConn.setLocalDescription(offer);
-    socket.emit('offer', { room_id: ROOM_ID, sdp: offer });
-  }
+  // Whoever receives peer_joined was in the room first → they create the offer.
+  // This handles both patient-initiated and doctor-initiated calls correctly.
+  await createPeerConnection();
+  const offer = await peerConn.createOffer({
+    offerToReceiveAudio: true,
+    offerToReceiveVideo: IS_VIDEO
+  });
+  await peerConn.setLocalDescription(offer);
+  socket.emit('offer', { room_id: ROOM_ID, sdp: offer });
 });
 
 socket.on('offer', async ({ sdp }) => {
