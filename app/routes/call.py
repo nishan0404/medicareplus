@@ -96,7 +96,8 @@ def end_call(room_id):
 
     flash('Call ended.', 'info')
     if current_user.role == 'doctor':
-        return redirect(url_for('doctor.dashboard'))
+        return redirect(url_for('doctor.prescribe',
+                                appointment_id=call_session.appointment_id))
     return redirect(url_for('appointment.my_appointments'))
 
 
@@ -112,6 +113,18 @@ def register_socketio_events(socketio):
     All events are namespaced under /call so they don't clash with other
     SocketIO usage in your app.
     """
+
+    @socketio.on('register_user', namespace='/call')
+    def on_register_user():
+        """
+        Register the logged-in user for dashboard-level call notifications.
+        Patients and doctors each join their own private notification room.
+        """
+        if not current_user.is_authenticated:
+            return
+        if current_user.role not in ('patient', 'doctor'):
+            return
+        join_room(f'user:{current_user.role}:{current_user.id}')
 
     @socketio.on('join', namespace='/call')
     def on_join(data):
@@ -191,6 +204,35 @@ def register_socketio_events(socketio):
         # Tell the other peer to redirect
         emit('call_ended', {}, room=room_id, include_self=False)
         leave_room(room_id)
+
+    @socketio.on('decline_call', namespace='/call')
+    def on_decline_call(data):
+        """
+        The receiving user declined an incoming call from the popup.
+        End the waiting call session and notify the caller's room.
+        """
+        room_id = data.get('room_id')
+        call_session = CallSession.query.filter_by(room_id=room_id).first()
+        if not call_session:
+            return
+
+        appt = Appointment.query.get(call_session.appointment_id)
+        allowed = appt and (
+            (current_user.role == 'patient' and appt.patient_id == current_user.id) or
+            (current_user.role == 'doctor' and appt.doctor_id == current_user.id)
+        )
+        if not allowed:
+            return
+
+        if call_session.status != 'ended':
+            call_session.status = 'ended'
+            call_session.ended_at = datetime.utcnow()
+            if call_session.started_at:
+                delta = call_session.ended_at - call_session.started_at
+                call_session.duration_secs = int(delta.total_seconds())
+            db.session.commit()
+
+        emit('call_declined', {}, room=room_id)
 
     @socketio.on('toggle_media', namespace='/call')
     def on_toggle_media(data):

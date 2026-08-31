@@ -283,10 +283,22 @@ def patient_history(patient_id):
         flash('No appointments found between you and this patient.', 'info')
         return redirect(url_for('doctor.dashboard'))
 
+    notes = ConsultationNote.query.filter_by(
+        patient_id=patient_id,
+        doctor_id=current_user.id,
+    ).order_by(ConsultationNote.created_at.desc()).all()
+
+    prescriptions = Prescription.query.filter_by(
+        patient_id=patient_id,
+        doctor_id=current_user.id,
+    ).order_by(Prescription.issued_at.desc()).all()
+
     return render_template('doctor/patient_history.html',
         title        = f'History — {patient.full_name}',
         patient      = patient,
         appointments = appointments,
+        notes        = notes,
+        prescriptions= prescriptions,
     )
 
 

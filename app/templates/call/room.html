@@ -172,6 +172,9 @@ const ROOM_ID   = "{{ room_id }}";
 const CALL_TYPE = "{{ call.call_type }}";
 const USER_ROLE = "{{ user_role }}";
 const IS_VIDEO  = CALL_TYPE === 'video';
+const END_REDIRECT_URL = USER_ROLE === 'doctor'
+  ? "{{ url_for('doctor.prescribe', appointment_id=appt.id) }}"
+  : "{{ url_for('appointment.my_appointments') }}";
 
 /* ── Detect Safari iOS ── */
 const IS_IOS       = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -308,10 +311,17 @@ socket.on('ice_candidate', async ({ candidate }) => {
 });
 
 socket.on('call_ended', () => {
+  cleanupCallResources();
   alert('The other party has ended the call.');
   fetch(document.getElementById('end-form').action, { method: 'POST' })
-    .then(() => { window.location.href = USER_ROLE === 'doctor' ? '/doctor/dashboard' : '/patient/appointments'; })
+    .then(() => { window.location.href = END_REDIRECT_URL; })
     .catch(() => { window.location.href = '/call/end/' + ROOM_ID; });
+});
+
+socket.on('call_declined', () => {
+  cleanupCallResources();
+  alert('The other party declined the call.');
+  window.location.href = END_REDIRECT_URL;
 });
 
 socket.on('peer_media_toggle', ({ type, enabled }) => {
@@ -400,11 +410,35 @@ async function flipCamera() {
 function endCall() {
   if (!confirm('Are you sure you want to end this call?')) return;
   socket.emit('end_call', { room_id: ROOM_ID });
+  cleanupCallResources();
   stopTimer();
-  // Use fetch POST then redirect — avoids browser issues with form.submit()
+  // Use fetch POST then redirect; avoids browser issues with form.submit().
   fetch(document.getElementById('end-form').action, { method: 'POST' })
-    .then(() => { window.location.href = USER_ROLE === 'doctor' ? '/doctor/dashboard' : '/patient/appointments'; })
+    .then(() => { window.location.href = END_REDIRECT_URL; })
     .catch(() => { window.location.href = '/call/end/' + ROOM_ID; });
+}
+
+function cleanupCallResources() {
+  stopTimer();
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+  if (pendingStream) {
+    pendingStream.getTracks().forEach(track => track.stop());
+    pendingStream = null;
+  }
+  if (peerConn) {
+    peerConn.ontrack = null;
+    peerConn.onicecandidate = null;
+    peerConn.onconnectionstatechange = null;
+    peerConn.close();
+    peerConn = null;
+  }
+  ['local-video', 'remote-video', 'remote-audio'].forEach(id => {
+    const media = document.getElementById(id);
+    if (media) media.srcObject = null;
+  });
 }
 
 function startTimer() {

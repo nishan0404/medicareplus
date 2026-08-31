@@ -111,7 +111,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="mc-label">Time</label>
-                                    <select name="appointment_time" class="form-control" required>
+                                    <select name="appointment_time" class="form-control appointment-time-select" required>
                                         <option value="">Select time</option>
                                         <option value="09:00">9:00 AM</option>
                                         <option value="09:30">9:30 AM</option>
@@ -207,7 +207,14 @@
 .doctor-card.selected { border-color: #1A5276 !important; background: rgba(26,82,118,.03); }
 </style>
 <script>
-const today = new Date().toISOString().split('T')[0];
+function formatLocalDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+const today = formatLocalDate(new Date());
 document.getElementById('date_filter').value = today;
 
 // Auto-select specialty if arriving from symptom results
@@ -239,7 +246,12 @@ function toggleBookingForm(doctorId, card) {
         card.classList.add('selected');
         document.getElementById('bookingSummary').style.display = 'block';
         const dateInput = document.getElementById('appt-date-' + doctorId);
-        if (dateInput) { dateInput.min = today; dateInput.value = today; }
+        if (dateInput) {
+            dateInput.min = today;
+            dateInput.value = today;
+            dateInput.addEventListener('change', () => updateAvailableTimes(form));
+            updateAvailableTimes(form);
+        }
         form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else {
         document.getElementById('bookingSummary').style.display = 'none';
@@ -271,6 +283,30 @@ function syncTypeStyle(doctorId) {
         inpersonLabel.style.borderColor = '#e5e7eb';
         inpersonLabel.style.background  = 'transparent';
         inpersonLabel.style.color       = '#64748b';
+    }
+}
+
+function updateAvailableTimes(form) {
+    const dateInput = form.querySelector('input[name="appointment_date"]');
+    const timeSelect = form.querySelector('select[name="appointment_time"]');
+    if (!dateInput || !timeSelect) return;
+
+    const selectedDate = dateInput.value;
+    const now = new Date();
+    const todayString = formatLocalDate(now);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    Array.from(timeSelect.options).forEach(option => {
+        if (!option.value) return;
+        const [hours, minutes] = option.value.split(':').map(Number);
+        const optionMinutes = hours * 60 + minutes;
+        const isPastToday = selectedDate === todayString && optionMinutes <= currentMinutes;
+        option.disabled = isPastToday;
+        option.hidden = isPastToday;
+    });
+
+    if (timeSelect.selectedOptions[0]?.disabled) {
+        timeSelect.value = '';
     }
 }
 

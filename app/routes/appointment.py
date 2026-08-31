@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import login_required, current_user
 from flask_mail import Message
-from app import db, mail
+from app import db, mail, socketio
 from app.models import Appointment, Doctor, DoctorAvailability, Patient, CallSession, Cancellation, EmailLog
 from datetime import datetime, date, timedelta
 import stripe
@@ -64,46 +64,16 @@ def build_email_card_html(title, greeting, intro, details, footer_note):
     """
 
 
-def send_booking_confirmation_email(appt):
-    patient = appt.patient
-    doctor = appt.doctor
-    sender = os.getenv('MAIL_USERNAME')
+def send_appointment_email(appt, recipient_email, email_type, subject,
+                           html_body, text_body):
     status = 'Sent'
-
     try:
-        html_body = build_email_card_html(
-            title='Appointment confirmed',
-            greeting=f'Hi {patient.full_name},',
-            intro='Your MediCare+ appointment has been booked successfully and your payment has been received.',
-            details=[
-                ('Doctor', doctor.full_name),
-                ('Specialisation', doctor.specialisation),
-                ('Date', appt.appointment_date.strftime('%A, %d %B %Y')),
-                ('Time', appt.appointment_time.strftime('%I:%M %p')),
-                ('Appointment Type', appt.appointment_type),
-                ('Payment Status', appt.payment_status),
-                ('Amount Paid', f'${float(appt.amount_paid):.2f} AUD'),
-            ],
-            footer_note='You can view or manage this appointment from your MediCare+ dashboard.'
-        )
         msg = Message(
-            subject='MediCare+ Appointment Confirmation',
-            sender=sender,
-            recipients=[patient.email],
-            body=(
-                f"Hi {patient.full_name},\n\n"
-                f"Your MediCare+ appointment has been confirmed.\n\n"
-                f"Doctor: {doctor.full_name}\n"
-                f"Specialisation: {doctor.specialisation}\n"
-                f"Date: {appt.appointment_date.strftime('%A, %d %B %Y')}\n"
-                f"Time: {appt.appointment_time.strftime('%I:%M %p')}\n"
-                f"Type: {appt.appointment_type}\n"
-                f"Payment Status: {appt.payment_status}\n"
-                f"Amount Paid: ${float(appt.amount_paid):.2f} AUD\n\n"
-                f"You can view this appointment from your MediCare+ dashboard.\n\n"
-                f"- MediCare+ Team"
-            ),
-            html=html_body
+            subject=subject,
+            sender=os.getenv('MAIL_USERNAME'),
+            recipients=[recipient_email],
+            body=text_body,
+            html=html_body,
         )
         mail.send(msg)
     except Exception:
@@ -111,13 +81,88 @@ def send_booking_confirmation_email(appt):
 
     email_log = EmailLog(
         appointment_id=appt.id,
-        recipient_email=patient.email,
-        email_type='Appointment_Confirmation',
+        recipient_email=recipient_email,
+        email_type=email_type,
         status=status,
     )
     db.session.add(email_log)
     db.session.commit()
     return status == 'Sent'
+
+
+def send_booking_confirmation_email(appt):
+    patient = appt.patient
+    doctor = appt.doctor
+    common_details = [
+        ('Doctor', doctor.full_name),
+        ('Specialisation', doctor.specialisation),
+        ('Patient', patient.full_name),
+        ('Date', appt.appointment_date.strftime('%A, %d %B %Y')),
+        ('Time', appt.appointment_time.strftime('%I:%M %p')),
+        ('Appointment Type', appt.appointment_type),
+        ('Payment Status', appt.payment_status),
+        ('Amount Paid', f'${float(appt.amount_paid):.2f} AUD'),
+    ]
+    if appt.reason:
+        common_details.append(('Reason', appt.reason))
+
+    patient_html = build_email_card_html(
+        title='Appointment confirmed',
+        greeting=f'Hi {patient.full_name},',
+        intro='Your MediCare+ appointment has been booked successfully and your payment has been received.',
+        details=common_details,
+        footer_note='You can view or manage this appointment from your MediCare+ dashboard.'
+    )
+    patient_text = (
+        f"Hi {patient.full_name},\n\n"
+        f"Your MediCare+ appointment has been confirmed.\n\n"
+        f"Doctor: {doctor.full_name}\n"
+        f"Specialisation: {doctor.specialisation}\n"
+        f"Date: {appt.appointment_date.strftime('%A, %d %B %Y')}\n"
+        f"Time: {appt.appointment_time.strftime('%I:%M %p')}\n"
+        f"Type: {appt.appointment_type}\n"
+        f"Payment Status: {appt.payment_status}\n"
+        f"Amount Paid: ${float(appt.amount_paid):.2f} AUD\n\n"
+        f"You can view this appointment from your MediCare+ dashboard.\n\n"
+        f"- MediCare+ Team"
+    )
+    patient_sent = send_appointment_email(
+        appt,
+        patient.email,
+        'Appointment_Confirmation_Patient',
+        'MediCare+ Appointment Confirmation',
+        patient_html,
+        patient_text,
+    )
+
+    doctor_html = build_email_card_html(
+        title='New appointment booked',
+        greeting=f'Hi {doctor.full_name},',
+        intro='A patient has booked and paid for a MediCare+ appointment with you.',
+        details=common_details,
+        footer_note='Please review your doctor dashboard before the consultation time.'
+    )
+    doctor_text = (
+        f"Hi {doctor.full_name},\n\n"
+        f"A patient has booked and paid for a MediCare+ appointment with you.\n\n"
+        f"Patient: {patient.full_name}\n"
+        f"Date: {appt.appointment_date.strftime('%A, %d %B %Y')}\n"
+        f"Time: {appt.appointment_time.strftime('%I:%M %p')}\n"
+        f"Type: {appt.appointment_type}\n"
+        f"Reason: {appt.reason or 'Not provided'}\n"
+        f"Payment Status: {appt.payment_status}\n\n"
+        f"Please review your doctor dashboard before the consultation time.\n\n"
+        f"- MediCare+ Team"
+    )
+    doctor_sent = send_appointment_email(
+        appt,
+        doctor.email,
+        'Appointment_Confirmation_Doctor',
+        'MediCare+ New Appointment Booked',
+        doctor_html,
+        doctor_text,
+    )
+    return patient_sent and doctor_sent
 
 
 def is_call_available(appt):
@@ -161,6 +206,30 @@ def create_call_session(appt, call_type):
     return new_call
 
 
+def notify_incoming_call(appt, call_session, caller_role):
+    """Send a real-time incoming call notification to the other appointment user."""
+    if caller_role == 'patient':
+        target_room = f'user:doctor:{appt.doctor_id}'
+        caller_name = appt.patient.full_name if appt.patient else 'Patient'
+    else:
+        target_room = f'user:patient:{appt.patient_id}'
+        caller_name = appt.doctor.full_name if appt.doctor else 'Doctor'
+
+    socketio.emit(
+        'incoming_call',
+        {
+            'room_id': call_session.room_id,
+            'appointment_id': appt.id,
+            'call_type': call_session.call_type,
+            'caller_role': caller_role,
+            'caller_name': caller_name,
+            'join_url': url_for('call.room', room_id=call_session.room_id),
+        },
+        room=target_room,
+        namespace='/call',
+    )
+
+
 @appointment.route('/patient/book', methods=['GET', 'POST'])
 @login_required
 def book():
@@ -178,14 +247,16 @@ def book():
             flash('Please select a doctor, date and time.', 'danger')
             return redirect(url_for('appointment.book'))
 
-        # Validate date is not in the past
+        # Validate date/time is not in the past
         try:
             appt_date_obj = datetime.strptime(appointment_date, '%Y-%m-%d').date()
+            appt_time_obj = datetime.strptime(appointment_time, '%H:%M').time()
         except ValueError:
-            flash('Invalid date format.', 'danger')
+            flash('Invalid date or time format.', 'danger')
             return redirect(url_for('appointment.book'))
 
-        if appt_date_obj < date.today():
+        selected_datetime = datetime.combine(appt_date_obj, appt_time_obj)
+        if selected_datetime <= datetime.now():
             flash('You cannot book an appointment in the past.', 'danger')
             return redirect(url_for('appointment.book'))
 
@@ -237,6 +308,10 @@ def checkout():
     doctor    = Doctor.query.get_or_404(booking['doctor_id'])
     appt_date = datetime.strptime(booking['appointment_date'], '%Y-%m-%d').date()
     appt_time = datetime.strptime(booking['appointment_time'], '%H:%M').time()
+    if datetime.combine(appt_date, appt_time) <= datetime.now():
+        session.pop('pending_booking', None)
+        flash('This appointment time has already passed. Please choose a future time.', 'danger')
+        return redirect(url_for('appointment.book'))
     return render_template('patient/checkout.html',
         title='Payment', doctor=doctor,
         appt_date=appt_date, appt_time=appt_time,
@@ -410,8 +485,10 @@ def start_call(appointment_id, call_type):
         return redirect(url_for('appointment.my_appointments'))
     existing = CallSession.query.filter_by(appointment_id=appointment_id).first()
     if existing and existing.status in ('waiting', 'active'):
+        notify_incoming_call(appt, existing, 'patient')
         return redirect(url_for('call.room', room_id=existing.room_id))
     new_call = create_call_session(appt, call_type)
+    notify_incoming_call(appt, new_call, 'patient')
     return redirect(url_for('call.room', room_id=new_call.room_id))
 
 
@@ -431,8 +508,10 @@ def doctor_start_call(appointment_id, call_type):
         return redirect(url_for('doctor.dashboard'))
     existing = CallSession.query.filter_by(appointment_id=appointment_id).first()
     if existing and existing.status in ('waiting', 'active'):
+        notify_incoming_call(appt, existing, 'doctor')
         return redirect(url_for('call.room', room_id=existing.room_id))
     new_call = create_call_session(appt, call_type)
+    notify_incoming_call(appt, new_call, 'doctor')
     return redirect(url_for('call.room', room_id=new_call.room_id))
 
 

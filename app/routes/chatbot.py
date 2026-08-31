@@ -1,9 +1,43 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from groq import Groq
 import os
+import requests
 
 chatbot = Blueprint('chatbot', __name__)
+
+GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+
+
+def build_gemini_contents(system_prompt, history, user_message):
+    """Convert app chat history into Gemini's user/model content format."""
+    contents = [{
+        'role': 'user',
+        'parts': [{'text': system_prompt}]
+    }]
+
+    for msg in history[-10:]:
+        role = 'model' if msg.get('role') == 'assistant' else 'user'
+        content = str(msg.get('content', '')).strip()
+        if content:
+            contents.append({
+                'role': role,
+                'parts': [{'text': content}]
+            })
+
+    contents.append({
+        'role': 'user',
+        'parts': [{'text': user_message}]
+    })
+    return contents
+
+
+def extract_gemini_reply(response_data):
+    candidates = response_data.get('candidates', [])
+    if not candidates:
+        return None
+    parts = candidates[0].get('content', {}).get('parts', [])
+    return ''.join(part.get('text', '') for part in parts).strip()
 
 @chatbot.route('/api/chat', methods=['POST'])
 @login_required
@@ -40,36 +74,35 @@ Important rules:
 - Keep responses concise and clear
 - Never provide specific medical diagnoses"""
 
-    # Build messages
-    messages = [{'role': 'system', 'content': system_prompt}]
-
-    # Add conversation history (last 10 messages)
-    for msg in history[-10:]:
-        messages.append({
-            'role': msg['role'],
-            'content': msg['content']
-        })
-
-    # Add current message
-    messages.append({
-        'role': 'user',
-        'content': user_message
-    })
-
     try:
-        # Call Groq API
-        client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-        response = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
-            messages=messages,
-            max_tokens=500,
-            temperature=0.7
+        gemini_api_key = os.getenv('GEMINI_API_KEY')
+        if not gemini_api_key:
+            print('Gemini API error: GEMINI_API_KEY is not configured')
+            return jsonify({
+                'reply': 'AI chat is not configured yet. Please add the Gemini API key and try again.'
+            })
+
+        response = requests.post(
+            GEMINI_API_URL.format(model=GEMINI_MODEL),
+            params={'key': gemini_api_key},
+            headers={'Content-Type': 'application/json'},
+            json={
+                'contents': build_gemini_contents(system_prompt, history, user_message),
+                'generationConfig': {
+                    'maxOutputTokens': 500,
+                    'temperature': 0.7,
+                },
+            },
+            timeout=30,
         )
-        reply = response.choices[0].message.content
+        response.raise_for_status()
+        reply = extract_gemini_reply(response.json())
+        if not reply:
+            reply = 'I could not generate a response right now. Please try again.'
         return jsonify({'reply': reply})
 
     except Exception as e:
-        print(f"Groq API error: {e}")
+        print(f"Gemini API error: {e}")
         return jsonify({
             'reply': 'I am having trouble connecting right now. Please try again or contact the clinic directly.'
         })

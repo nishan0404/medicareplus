@@ -189,6 +189,51 @@
             font-size:9px; padding:1px 4px; margin-left:3px; vertical-align:middle;
         }
 
+        /* Incoming call popup */
+        .incoming-call-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(11, 37, 69, .42);
+            padding: 1rem;
+        }
+        .incoming-call-card {
+            width: 100%;
+            max-width: 380px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .incoming-call-avatar {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            background: #0B2545;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: pulse 1.3s ease-in-out infinite;
+        }
+        .incoming-call-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .75rem;
+            margin-top: 1.25rem;
+        }
+        .incoming-call-actions .btn {
+            min-height: 44px;
+            font-weight: 600;
+        }
+
         /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -316,6 +361,28 @@
     </div>
 </nav>
 
+{% if current_user.is_authenticated and current_user.role in ['patient', 'doctor'] %}
+<div id="incoming-call-overlay" class="incoming-call-overlay d-none" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title">
+    <div class="incoming-call-card">
+        <div class="incoming-call-avatar">
+            <i class="fas fa-phone-alt"></i>
+        </div>
+        <p class="text-uppercase fw-semibold mb-1" style="font-size:.72rem;letter-spacing:.08em;color:#1A8A4A;">Incoming Call</p>
+        <h5 id="incoming-call-title" class="fw-bold mb-1" style="color:#0B2545;">MediCare+ Consultation</h5>
+        <p id="incoming-call-caller" class="mb-1" style="color:#334155;">Someone is calling you</p>
+        <p id="incoming-call-type" class="mb-0" style="font-size:.9rem;color:#64748b;">Video call</p>
+        <div class="incoming-call-actions">
+            <button type="button" class="btn btn-danger" onclick="declineIncomingCall()">
+                <i class="fas fa-phone-slash me-1"></i>Decline
+            </button>
+            <button type="button" class="btn btn-mc-green" onclick="acceptIncomingCall()">
+                <i class="fas fa-phone me-1"></i>Accept
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Flash Messages -->
 <div class="container-fluid px-4 mt-3">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -394,6 +461,96 @@ function addTyping(){const c=document.getElementById('chat-messages');const t=do
 function removeTyping(){const t=document.getElementById('ai-typing-indicator');if(t)t.remove();}
 async function chatbotSend(){const input=document.getElementById('chat-input');const message=input.value.trim();if(!message)return;input.value='';addMessage('user',message);addTyping();chatHistory.push({role:'user',content:message});try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:chatHistory})});const data=await r.json();removeTyping();const reply=data.reply||'Sorry, I could not process that.';addMessageHTML('assistant',reply);chatHistory.push({role:'assistant',content:reply});const lm=message.toLowerCase();if(lm.includes('book appointment')||lm.includes('book an appointment'))addRedirectButton('/patient/book','📅 Book Appointment Now');else if(lm.includes('symptom'))addRedirectButton('/patient/symptoms','🩺 Open Symptom Checker');else if(lm.includes('medical record')||lm.includes('my record'))addRedirectButton('/patient/records','📋 View Medical Records');else if(lm.includes('my appointment'))addRedirectButton('/patient/appointments','📆 View My Appointments');else if(lm.includes('profile'))addRedirectButton('/patient/profile','👤 Go to My Profile');}catch(e){removeTyping();addMessage('assistant','Sorry, I am having trouble connecting.');}}
 </script>
+
+{% if current_user.role in ['patient', 'doctor'] %}
+<script>
+let incomingCallData = null;
+let incomingCallSocket = null;
+let incomingToneContext = null;
+let incomingToneTimer = null;
+
+function loadSocketIoForCalls() {
+  if (window.io) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+function startIncomingTone() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    incomingToneContext = incomingToneContext || new AudioContextClass();
+    const playTone = () => {
+      const osc = incomingToneContext.createOscillator();
+      const gain = incomingToneContext.createGain();
+      osc.frequency.value = 720;
+      gain.gain.setValueAtTime(0.0001, incomingToneContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, incomingToneContext.currentTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, incomingToneContext.currentTime + 0.45);
+      osc.connect(gain);
+      gain.connect(incomingToneContext.destination);
+      osc.start();
+      osc.stop(incomingToneContext.currentTime + 0.5);
+    };
+    playTone();
+    incomingToneTimer = setInterval(playTone, 1200);
+  } catch (e) {}
+}
+
+function stopIncomingTone() {
+  if (incomingToneTimer) {
+    clearInterval(incomingToneTimer);
+    incomingToneTimer = null;
+  }
+}
+
+function showIncomingCall(call) {
+  incomingCallData = call;
+  const overlay = document.getElementById('incoming-call-overlay');
+  const caller = document.getElementById('incoming-call-caller');
+  const type = document.getElementById('incoming-call-type');
+  if (!overlay || !caller || !type) return;
+  caller.textContent = `${call.caller_name || 'MediCare+ user'} is calling you`;
+  type.textContent = `${call.call_type === 'audio' ? 'Audio' : 'Video'} consultation`;
+  overlay.classList.remove('d-none');
+  startIncomingTone();
+}
+
+function hideIncomingCall() {
+  const overlay = document.getElementById('incoming-call-overlay');
+  if (overlay) overlay.classList.add('d-none');
+  stopIncomingTone();
+}
+
+function acceptIncomingCall() {
+  if (!incomingCallData) return;
+  const joinUrl = incomingCallData.join_url || `/call/room/${incomingCallData.room_id}`;
+  hideIncomingCall();
+  window.location.href = joinUrl;
+}
+
+function declineIncomingCall() {
+  if (incomingCallSocket && incomingCallData) {
+    incomingCallSocket.emit('decline_call', { room_id: incomingCallData.room_id });
+  }
+  incomingCallData = null;
+  hideIncomingCall();
+}
+
+loadSocketIoForCalls().then(() => {
+  incomingCallSocket = io('/call', { transports: ['websocket', 'polling'] });
+  incomingCallSocket.on('connect', () => incomingCallSocket.emit('register_user'));
+  incomingCallSocket.on('incoming_call', showIncomingCall);
+  incomingCallSocket.on('call_declined', hideIncomingCall);
+  incomingCallSocket.on('call_ended', hideIncomingCall);
+}).catch(() => {});
+</script>
+{% endif %}
 {% endif %}
 
 </body>
