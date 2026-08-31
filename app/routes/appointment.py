@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import login_required, current_user
-from app import db
-from app.models import Appointment, Doctor, DoctorAvailability, Patient, CallSession, Cancellation
+from flask_mail import Message
+from app import db, mail
+from app.models import Appointment, Doctor, DoctorAvailability, Patient, CallSession, Cancellation, EmailLog
 from datetime import datetime, date, timedelta
 import stripe
 import os
@@ -12,6 +13,46 @@ appointment = Blueprint('appointment', __name__)
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 CONSULTATION_FEE = 7500
+
+
+def send_booking_confirmation_email(appt):
+    patient = appt.patient
+    doctor = appt.doctor
+    sender = os.getenv('MAIL_USERNAME')
+    status = 'Sent'
+
+    try:
+        msg = Message(
+            subject='MediCare+ Appointment Confirmation',
+            sender=sender,
+            recipients=[patient.email],
+            body=(
+                f"Hi {patient.full_name},\n\n"
+                f"Your MediCare+ appointment has been confirmed.\n\n"
+                f"Doctor: {doctor.full_name}\n"
+                f"Specialisation: {doctor.specialisation}\n"
+                f"Date: {appt.appointment_date.strftime('%A, %d %B %Y')}\n"
+                f"Time: {appt.appointment_time.strftime('%I:%M %p')}\n"
+                f"Type: {appt.appointment_type}\n"
+                f"Payment Status: {appt.payment_status}\n"
+                f"Amount Paid: ${float(appt.amount_paid):.2f} AUD\n\n"
+                f"You can view this appointment from your MediCare+ dashboard.\n\n"
+                f"- MediCare+ Team"
+            )
+        )
+        mail.send(msg)
+    except Exception:
+        status = 'Failed'
+
+    email_log = EmailLog(
+        appointment_id=appt.id,
+        recipient_email=patient.email,
+        email_type='Appointment_Confirmation',
+        status=status,
+    )
+    db.session.add(email_log)
+    db.session.commit()
+    return status == 'Sent'
 
 
 def is_call_available(appt):
@@ -209,6 +250,7 @@ def payment_success():
     )
     db.session.add(new_appointment)
     db.session.commit()
+    send_booking_confirmation_email(new_appointment)
     session.pop('pending_booking', None)
     flash('Appointment booked!', 'success')
     return redirect(url_for('appointment.booking_confirmation', appointment_id=new_appointment.id))

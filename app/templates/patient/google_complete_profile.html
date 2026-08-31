@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCare+ | Complete Google Sign-Up</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        body { margin: 0; background: #F0F4F8; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+        .auth-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); padding: 2.25rem; width: 100%; max-width: 460px; }
+        .brand { display: flex; align-items: center; gap: .6rem; color: #0B2545; font-size: 1.45rem; font-weight: 700; margin-bottom: 1rem; }
+        h1 { font-size: 1.6rem; font-weight: 700; color: #0B2545; margin-bottom: .25rem; }
+        .sub { color: #64748b; font-size: .9rem; margin-bottom: 1.5rem; }
+        .google-box { background: #F8FAFC; border: 1px solid #e5e7eb; border-radius: 10px; padding: .85rem 1rem; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { font-size: .85rem; font-weight: 500; color: #374151; display: block; margin-bottom: .35rem; }
+        .form-group input { width: 100%; padding: .7rem 1rem; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: .9rem; outline: none; transition: all .15s; }
+        .form-group input:focus { border-color: #1A5276; box-shadow: 0 0 0 3px rgba(26,82,118,.1); }
+        .btn-submit { width: 100%; padding: .75rem; background: #1A8A4A; color: white; border: none; border-radius: 8px; font-size: .95rem; font-weight: 600; cursor: pointer; margin-top: .5rem; }
+        .btn-submit:hover { background: #157a40; }
+        .flash-error { background: #fee2e2; border-radius: 8px; padding: .75rem 1rem; color: #991b1b; font-size: .85rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand">
+            <i class="fas fa-heartbeat" style="color:#1A8A4A;"></i>
+            MediCare+
+        </div>
+        <h1>Complete your profile</h1>
+        <p class="sub">Google verified your email. Add the details required for your patient record.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+            <div class="flash-error"><i class="fas fa-exclamation-circle me-2"></i>{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="google-box">
+            <div style="font-size:.82rem; color:#64748b;">Google account</div>
+            <div style="font-weight:600; color:#0B2545;">{{ google_patient.email }}</div>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.google_complete_profile') }}">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" value="{{ google_patient.full_name }}" required>
+            </div>
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" name="date_of_birth" required>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" name="phone" placeholder="0412345678" required>
+            </div>
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-check me-2"></i>Create Patient Account
+            </button>
+        </form>
+
+        <p style="text-align:center; font-size:.875rem; color:#4b5563; margin-top:1.25rem; margin-bottom:0;">
+            <a href="{{ url_for('auth.login') }}" style="color:#1A5276; font-weight:600; text-decoration:none;">Back to login</a>
+        </p>
+    </div>
+</body>
+</html>

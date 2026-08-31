@@ -40,9 +40,17 @@
             background: rgba(255,255,255,0.1);
         }
         .mc-navbar .nav-user {
-            color: rgba(255,255,255,0.85);
+            color: rgba(255,255,255,0.85) !important;
             font-size: .85rem;
             font-weight: 500;
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            transition: all .15s;
+        }
+        .mc-navbar .nav-user:hover {
+            color: white !important;
+            background: rgba(255,255,255,0.1);
         }
 
         /* ── Cards ── */
@@ -279,9 +287,16 @@
             <ul class="navbar-nav ms-auto align-items-center">
                 {% if current_user.is_authenticated %}
                     <li class="nav-item me-2">
-                        <span class="nav-user">
+                        {% if current_user.role == 'patient' %}
+                            {% set profile_url = url_for('patient.profile') %}
+                        {% elif current_user.role == 'doctor' %}
+                            {% set profile_url = url_for('doctor.profile') %}
+                        {% else %}
+                            {% set profile_url = url_for('admin.dashboard') %}
+                        {% endif %}
+                        <a class="nav-user" href="{{ profile_url }}" title="Open profile">
                             <i class="fas fa-user-circle me-1"></i>{{ current_user.full_name }}
-                        </span>
+                        </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/logout">

@@ -169,6 +169,13 @@
 
         <div class="divider">or</div>
 
+        <a href="{{ url_for('auth.google_login') }}"
+           class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 mb-3"
+           style="border-radius:8px; padding:.7rem 1rem; font-weight:600;">
+            <i class="fab fa-google"></i>
+            Continue with Google
+        </a>
+
         <p style="text-align:center; font-size:.875rem; color:#4b5563; margin:0;">
             Don't have an account?
             <a href="/register" style="color:#1A5276; font-weight:600; text-decoration:none;">Register here</a>

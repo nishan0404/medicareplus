@@ -126,6 +126,19 @@
             <button type="submit" class="btn-submit">Create Account</button>
         </form>
 
+        <div style="display:flex; align-items:center; gap:1rem; margin:1.25rem 0; color:#9ca3af; font-size:.85rem;">
+            <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+            <span>or</span>
+            <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+        </div>
+
+        <a href="{{ url_for('auth.google_login') }}"
+           class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2"
+           style="border-radius:8px; padding:.7rem 1rem; font-weight:600;">
+            <i class="fab fa-google"></i>
+            Sign up with Google
+        </a>
+
         <p style="text-align:center; font-size:.875rem; color:#4b5563; margin-top:1.25rem; margin-bottom:0;">
             Already have an account?
             <a href="/login" style="color:#1A5276; font-weight:600; text-decoration:none;">Sign In</a>

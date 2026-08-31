@@ -4,9 +4,14 @@ from app import db, bcrypt, mail, limiter
 from app.models import Patient, PatientProfile, Doctor, Admin, AuditLog, PasswordResetToken
 from datetime import datetime, timedelta
 from flask_mail import Message
-import re, secrets, os
+from urllib.parse import urlencode
+import re, secrets, os, requests
 
 auth = Blueprint('auth', __name__)
+
+GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo'
 
 
 # ── Helper: Log Event ──
@@ -94,6 +99,167 @@ def register():
         return redirect(url_for('auth.login'))
 
     return render_template('patient/register.html', title='Register')
+
+
+@auth.route('/login/google')
+def google_login():
+    client_id = os.getenv('GOOGLE_CLIENT_ID')
+    if not client_id:
+        flash('Google sign-in is not configured yet.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    state = secrets.token_urlsafe(32)
+    session['google_oauth_state'] = state
+    params = {
+        'client_id': client_id,
+        'redirect_uri': url_for('auth.google_callback', _external=True),
+        'response_type': 'code',
+        'scope': 'openid email profile',
+        'state': state,
+        'prompt': 'select_account',
+    }
+    return redirect(f'{GOOGLE_AUTH_URL}?{urlencode(params)}')
+
+
+@auth.route('/login/google/callback')
+def google_callback():
+    if request.args.get('state') != session.pop('google_oauth_state', None):
+        flash('Google sign-in could not be verified. Please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    code = request.args.get('code')
+    if not code:
+        flash('Google sign-in was cancelled or failed.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    client_id = os.getenv('GOOGLE_CLIENT_ID')
+    client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
+    if not client_id or not client_secret:
+        flash('Google sign-in is not configured yet.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    try:
+        token_res = requests.post(
+            GOOGLE_TOKEN_URL,
+            data={
+                'code': code,
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'redirect_uri': url_for('auth.google_callback', _external=True),
+                'grant_type': 'authorization_code',
+            },
+            timeout=10,
+        )
+        token_res.raise_for_status()
+        access_token = token_res.json().get('access_token')
+        if not access_token:
+            raise ValueError('Missing Google access token')
+
+        user_res = requests.get(
+            GOOGLE_USERINFO_URL,
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10,
+        )
+        user_res.raise_for_status()
+        google_user = user_res.json()
+    except Exception:
+        flash('Google sign-in failed. Please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    email = (google_user.get('email') or '').strip().lower()
+    full_name = (google_user.get('name') or '').strip()
+    email_verified = google_user.get('email_verified')
+    if not email or not email_verified:
+        flash('Google account email must be verified before sign-in.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    patient = Patient.query.filter_by(email=email).first()
+    if patient:
+        if not patient.is_active:
+            flash('Your account has been deactivated.', 'danger')
+            return redirect(url_for('auth.login'))
+        patient.is_verified = True
+        db.session.commit()
+        login_user(patient)
+        log_event(patient.id, 'patient', 'Google_Login_Success',
+                  patient.id, 'patients', request.remote_addr or '127.0.0.1')
+        flash(f'Welcome back, {patient.full_name}!', 'success')
+        return redirect(url_for('patient.dashboard'))
+
+    existing_staff = (Doctor.query.filter_by(email=email).first() or
+                      Admin.query.filter_by(email=email).first())
+    if existing_staff:
+        flash('This Google email is already used by a staff account. Please use email and password login.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    session['pending_google_patient'] = {
+        'email': email,
+        'full_name': full_name or email.split('@')[0],
+    }
+    return redirect(url_for('auth.google_complete_profile'))
+
+
+@auth.route('/login/google/complete-profile', methods=['GET', 'POST'])
+def google_complete_profile():
+    google_patient = session.get('pending_google_patient')
+    if not google_patient:
+        flash('Please start Google sign-up again.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        full_name = request.form.get('full_name', '').strip()
+        date_of_birth = request.form.get('date_of_birth', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        errors = []
+        if not full_name:
+            errors.append('Full name is required.')
+        if not date_of_birth:
+            errors.append('Date of birth is required.')
+        if not re.match(r'^\d{10}$', phone):
+            errors.append('Phone number must be exactly 10 digits.')
+        if Patient.query.filter_by(email=google_patient['email']).first():
+            errors.append('An account with this email already exists. Please log in.')
+
+        try:
+            dob = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+        except ValueError:
+            dob = None
+            errors.append('Please enter a valid date of birth.')
+
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('patient/google_complete_profile.html',
+                                   title='Complete Google Sign-Up',
+                                   google_patient=google_patient)
+
+        random_password = secrets.token_urlsafe(32)
+        patient = Patient(
+            full_name=full_name,
+            date_of_birth=dob,
+            email=google_patient['email'],
+            phone=phone,
+            password_hash=bcrypt.generate_password_hash(random_password).decode('utf-8'),
+            is_verified=True,
+        )
+        db.session.add(patient)
+        db.session.commit()
+
+        profile = PatientProfile(patient_id=patient.id)
+        db.session.add(profile)
+        db.session.commit()
+
+        session.pop('pending_google_patient', None)
+        login_user(patient)
+        log_event(patient.id, 'patient', 'Google_Account_Created',
+                  patient.id, 'patients', request.remote_addr or '127.0.0.1')
+        flash(f'Welcome to MediCare+, {patient.full_name}!', 'success')
+        return redirect(url_for('patient.dashboard'))
+
+    return render_template('patient/google_complete_profile.html',
+                           title='Complete Google Sign-Up',
+                           google_patient=google_patient)
 
 
 @auth.route('/login', methods=['GET', 'POST'])
