@@ -59,6 +59,31 @@ def build_email_button_html(title, greeting, intro, button_text, button_url, not
     """
 
 
+def send_welcome_email(patient):
+    dashboard_url = url_for('patient.dashboard', _external=True)
+    html_body = build_email_button_html(
+        title='Welcome to MediCare+',
+        greeting=f'Hi {patient.full_name},',
+        intro='Your MediCare+ patient account has been created successfully. You can now book appointments, view medical records, use the AI symptom checker, and access telehealth features from your dashboard.',
+        button_text='Open Dashboard',
+        button_url=dashboard_url,
+        note='If you did not create this account, please contact the MediCare+ support team.'
+    )
+    msg = Message(
+        subject='Welcome to MediCare+',
+        sender=os.getenv('MAIL_USERNAME'),
+        recipients=[patient.email],
+        body=(
+            f"Hi {patient.full_name},\n\n"
+            f"Welcome to MediCare+. Your patient account has been created successfully.\n\n"
+            f"Open your dashboard:\n{dashboard_url}\n\n"
+            f"- MediCare+ Team"
+        ),
+        html=html_body
+    )
+    mail.send(msg)
+
+
 # ── Helper: Log Event ──
 def log_event(user_id, user_role, action_type, affected_record_id=None,
               affected_table=None, ip_address='127.0.0.1'):
@@ -139,6 +164,11 @@ def register():
         ip = request.remote_addr or '127.0.0.1'
         log_event(new_patient.id, 'patient', 'Patient_Registered',
                   new_patient.id, 'patients', ip)
+
+        try:
+            send_welcome_email(new_patient)
+        except Exception:
+            pass
 
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('auth.login'))
@@ -299,6 +329,12 @@ def google_complete_profile():
         login_user(patient)
         log_event(patient.id, 'patient', 'Google_Account_Created',
                   patient.id, 'patients', request.remote_addr or '127.0.0.1')
+
+        try:
+            send_welcome_email(patient)
+        except Exception:
+            pass
+
         flash(f'Welcome to MediCare+, {patient.full_name}!', 'success')
         return redirect(url_for('patient.dashboard'))
 
