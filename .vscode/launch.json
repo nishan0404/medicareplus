@@ -18,7 +18,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Open in Chrome",
-            "url": "http://localhost:5000",
+            "url": "http://localhost:10000",
             "webRoot": "${workspaceFolder}"
         }
     ]

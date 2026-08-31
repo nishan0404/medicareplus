@@ -14,6 +14,51 @@ GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo'
 
 
+def build_email_button_html(title, greeting, intro, button_text, button_url, note):
+    return f"""
+    <!doctype html>
+    <html>
+      <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:28px 12px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;">
+                <tr>
+                  <td style="background:#0B2545;padding:22px 28px;color:#ffffff;">
+                    <div style="font-size:24px;font-weight:700;letter-spacing:.2px;">MediCare+</div>
+                    <div style="font-size:13px;color:#bfdbfe;margin-top:4px;">AI-Powered Healthcare Management</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:30px 28px;">
+                    <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#0B2545;">{title}</h1>
+                    <p style="margin:0 0 14px;font-size:15px;line-height:1.6;">{greeting}</p>
+                    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#334155;">{intro}</p>
+                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
+                      <tr>
+                        <td style="background:#1A8A4A;border-radius:8px;">
+                          <a href="{button_url}" style="display:inline-block;padding:13px 22px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;">{button_text}</a>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#64748b;">{note}</p>
+                    <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b;word-break:break-all;">If the button does not work, copy and paste this link into your browser:<br>{button_url}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#f8fafc;padding:18px 28px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.6;">
+                    This is an automated email from MediCare+. Please do not reply to this message.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+
 # ── Helper: Log Event ──
 def log_event(user_id, user_role, action_type, affected_record_id=None,
               affected_table=None, ip_address='127.0.0.1'):
@@ -364,18 +409,27 @@ def forgot_password():
 
             reset_url = url_for('auth.reset_password', token=token, _external=True)
             try:
+                html_body = build_email_button_html(
+                    title='Reset your password',
+                    greeting=f'Hi {user.full_name},',
+                    intro='We received a request to reset the password for your MediCare+ account. Use the secure button below to create a new password.',
+                    button_text='Reset Password',
+                    button_url=reset_url,
+                    note='This secure reset link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.'
+                )
                 msg = Message(
-                    subject  = 'MediCare+ — Reset Your Password',
+                    subject  = 'MediCare+ - Reset Your Password',
                     sender   = os.getenv('MAIL_USERNAME'),
                     recipients = [email],
                     body=(
                         f"Hi {user.full_name},\n\n"
-                        f"Click the link below to reset your password. "
-                        f"This link expires in 1 hour.\n\n"
+                        f"We received a request to reset the password for your MediCare+ account.\n\n"
+                        f"Reset your password using this secure link. It expires in 1 hour:\n\n"
                         f"{reset_url}\n\n"
-                        f"If you did not request this, ignore this email.\n\n"
-                        f"— MediCare+ Team"
-                    )
+                        f"If you did not request this, you can safely ignore this email.\n\n"
+                        f"- MediCare+ Team"
+                    ),
+                    html=html_body
                 )
                 mail.send(msg)
             except Exception:

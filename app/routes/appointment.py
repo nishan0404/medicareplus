@@ -15,6 +15,55 @@ STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 CONSULTATION_FEE = 7500
 
 
+def build_email_card_html(title, greeting, intro, details, footer_note):
+    rows = ''.join(
+        f"""
+        <tr>
+          <td style="padding:10px 0;color:#64748b;font-size:14px;border-bottom:1px solid #e2e8f0;">{label}</td>
+          <td style="padding:10px 0;color:#0f172a;font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid #e2e8f0;">{value}</td>
+        </tr>
+        """
+        for label, value in details
+    )
+    return f"""
+    <!doctype html>
+    <html>
+      <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:28px 12px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;">
+                <tr>
+                  <td style="background:#0B2545;padding:22px 28px;color:#ffffff;">
+                    <div style="font-size:24px;font-weight:700;letter-spacing:.2px;">MediCare+</div>
+                    <div style="font-size:13px;color:#bfdbfe;margin-top:4px;">AI-Powered Healthcare Management</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:30px 28px;">
+                    <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#0B2545;">{title}</h1>
+                    <p style="margin:0 0 14px;font-size:15px;line-height:1.6;">{greeting}</p>
+                    <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#334155;">{intro}</p>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:6px 16px;margin-bottom:20px;">
+                      {rows}
+                    </table>
+                    <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">{footer_note}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#f8fafc;padding:18px 28px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.6;">
+                    This is an automated email from MediCare+. Please do not reply to this message.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+
 def send_booking_confirmation_email(appt):
     patient = appt.patient
     doctor = appt.doctor
@@ -22,6 +71,21 @@ def send_booking_confirmation_email(appt):
     status = 'Sent'
 
     try:
+        html_body = build_email_card_html(
+            title='Appointment confirmed',
+            greeting=f'Hi {patient.full_name},',
+            intro='Your MediCare+ appointment has been booked successfully and your payment has been received.',
+            details=[
+                ('Doctor', doctor.full_name),
+                ('Specialisation', doctor.specialisation),
+                ('Date', appt.appointment_date.strftime('%A, %d %B %Y')),
+                ('Time', appt.appointment_time.strftime('%I:%M %p')),
+                ('Appointment Type', appt.appointment_type),
+                ('Payment Status', appt.payment_status),
+                ('Amount Paid', f'${float(appt.amount_paid):.2f} AUD'),
+            ],
+            footer_note='You can view or manage this appointment from your MediCare+ dashboard.'
+        )
         msg = Message(
             subject='MediCare+ Appointment Confirmation',
             sender=sender,
@@ -38,7 +102,8 @@ def send_booking_confirmation_email(appt):
                 f"Amount Paid: ${float(appt.amount_paid):.2f} AUD\n\n"
                 f"You can view this appointment from your MediCare+ dashboard.\n\n"
                 f"- MediCare+ Team"
-            )
+            ),
+            html=html_body
         )
         mail.send(msg)
     except Exception:
