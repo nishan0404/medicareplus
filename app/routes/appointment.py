@@ -13,6 +13,11 @@ appointment = Blueprint('appointment', __name__)
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 CONSULTATION_FEE = 7500
+DEFAULT_TIME_SLOTS = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+    '16:00', '16:30',
+]
 
 
 def build_email_card_html(title, greeting, intro, details, footer_note):
@@ -230,11 +235,71 @@ def notify_incoming_call(appt, call_session, caller_role):
     )
 
 
+def get_booking_slot_maps(doctors):
+    doctor_ids = [doctor.id for doctor in doctors]
+    availability_map = {}
+    booked_slots = {}
+    custom_doctor_ids = []
+
+    if doctor_ids:
+        custom_doctor_ids = [
+            str(row[0]) for row in db.session.query(DoctorAvailability.doctor_id)
+            .filter(
+                DoctorAvailability.doctor_id.in_(doctor_ids),
+                DoctorAvailability.slot_date >= date.today(),
+                DoctorAvailability.is_available == True,
+            )
+            .distinct()
+            .all()
+        ]
+
+        available_slots = DoctorAvailability.query.filter(
+            DoctorAvailability.doctor_id.in_(doctor_ids),
+            DoctorAvailability.slot_date >= date.today(),
+            DoctorAvailability.is_available == True,
+            DoctorAvailability.is_booked == False,
+        ).order_by(DoctorAvailability.slot_date.asc(), DoctorAvailability.slot_time.asc()).all()
+
+        for slot in available_slots:
+            doctor_key = str(slot.doctor_id)
+            date_key = slot.slot_date.strftime('%Y-%m-%d')
+            availability_map.setdefault(doctor_key, {}).setdefault(date_key, []).append(
+                slot.slot_time.strftime('%H:%M')
+            )
+
+        current_bookings = Appointment.query.filter(
+            Appointment.doctor_id.in_(doctor_ids),
+            Appointment.appointment_date >= date.today(),
+            Appointment.status != 'Cancelled',
+        ).all()
+
+        for appt in current_bookings:
+            doctor_key = str(appt.doctor_id)
+            date_key = appt.appointment_date.strftime('%Y-%m-%d')
+            booked_slots.setdefault(doctor_key, {}).setdefault(date_key, []).append(
+                appt.appointment_time.strftime('%H:%M')
+            )
+
+    return availability_map, booked_slots, custom_doctor_ids
+
+
+def update_availability_booking(appt, is_booked):
+    slot = DoctorAvailability.query.filter_by(
+        doctor_id=appt.doctor_id,
+        slot_date=appt.appointment_date,
+        slot_time=appt.appointment_time,
+    ).first()
+    if slot:
+        slot.is_booked = is_booked
+        slot.appointment_id = appt.id if is_booked else None
+
+
 @appointment.route('/patient/book', methods=['GET', 'POST'])
 @login_required
 def book():
     doctors = Doctor.query.filter_by(is_active=True).all()
     specialisations = list(set([d.specialisation for d in doctors]))
+    availability_map, booked_slots, custom_doctor_ids = get_booking_slot_maps(doctors)
 
     if request.method == 'POST':
         doctor_id        = request.form.get('doctor_id')
@@ -281,6 +346,12 @@ def book():
             flash('This time slot is no longer available.', 'danger')
             return redirect(url_for('appointment.book'))
 
+        doctor_slots_for_date = availability_map.get(str(doctor_id), {}).get(appointment_date, [])
+        doctor_has_custom_availability = str(doctor_id) in custom_doctor_ids
+        if doctor_has_custom_availability and appointment_time not in doctor_slots_for_date:
+            flash('Please choose one of the doctor’s available time slots.', 'danger')
+            return redirect(url_for('appointment.book'))
+
         session['pending_booking'] = {
             'doctor_id': int(doctor_id),
             'appointment_date': appointment_date,
@@ -294,6 +365,10 @@ def book():
         title='Book Appointment',
         doctors=doctors,
         specialisations=sorted(specialisations),
+        availability_map=availability_map,
+        booked_slots=booked_slots,
+        default_slots=DEFAULT_TIME_SLOTS,
+        custom_doctor_ids=custom_doctor_ids,
         today=date.today().strftime('%Y-%m-%d')
     )
 
@@ -390,6 +465,8 @@ def payment_success():
     )
     db.session.add(new_appointment)
     db.session.commit()
+    update_availability_booking(new_appointment, True)
+    db.session.commit()
     send_booking_confirmation_email(new_appointment)
     session.pop('pending_booking', None)
     flash('Appointment booked!', 'success')
@@ -437,7 +514,8 @@ def my_appointments():
         upcoming=upcoming, past=past,
         today=today,
         call_available=call_available,
-        chat_available=chat_available
+        chat_available=chat_available,
+        default_slots=DEFAULT_TIME_SLOTS,
     )
 
 
@@ -456,6 +534,7 @@ def cancel(appointment_id):
     reason = request.form.get('cancellation_reason', '').strip()[:255]
 
     appt.status = 'Cancelled'
+    update_availability_booking(appt, False)
 
     cancellation = Cancellation(
         appointment_id      = appt.id,
@@ -466,6 +545,75 @@ def cancel(appointment_id):
     db.session.add(cancellation)
     db.session.commit()
     flash('Appointment cancelled.', 'success')
+    return redirect(url_for('appointment.my_appointments'))
+
+
+@appointment.route('/patient/appointments/reschedule/<int:appointment_id>', methods=['POST'])
+@login_required
+def reschedule(appointment_id):
+    appt = Appointment.query.get_or_404(appointment_id)
+    if appt.patient_id != current_user.id:
+        flash('Unauthorised.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+    if appt.status not in ('Upcoming', 'In-Progress'):
+        flash('Only active appointments can be rescheduled.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+
+    old_datetime = datetime.combine(appt.appointment_date, appt.appointment_time)
+    if (old_datetime - datetime.now()).total_seconds() < 7200:
+        flash('Cannot reschedule within 2 hours of the scheduled time.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+
+    new_date = request.form.get('appointment_date')
+    new_time = request.form.get('appointment_time')
+    reason = request.form.get('reschedule_reason', '').strip()[:255]
+
+    try:
+        new_date_obj = datetime.strptime(new_date, '%Y-%m-%d').date()
+        new_time_obj = datetime.strptime(new_time, '%H:%M').time()
+    except (ValueError, TypeError):
+        flash('Invalid reschedule date or time.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+
+    if datetime.combine(new_date_obj, new_time_obj) <= datetime.now():
+        flash('Please choose a future appointment time.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+
+    existing = Appointment.query.filter_by(
+        doctor_id=appt.doctor_id,
+        appointment_date=new_date_obj,
+        appointment_time=new_time_obj,
+    ).filter(
+        Appointment.id != appt.id,
+        Appointment.status != 'Cancelled',
+    ).first()
+    if existing:
+        flash('This time slot is already booked.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+
+    available_slot = DoctorAvailability.query.filter_by(
+        doctor_id=appt.doctor_id,
+        slot_date=new_date_obj,
+        slot_time=new_time_obj,
+        is_available=True,
+        is_booked=False,
+    ).first()
+    custom_slots_exist = DoctorAvailability.query.filter_by(
+        doctor_id=appt.doctor_id,
+        is_available=True,
+    ).first()
+    if custom_slots_exist and not available_slot:
+        flash('Please choose one of the doctor’s available time slots.', 'danger')
+        return redirect(url_for('appointment.my_appointments'))
+
+    update_availability_booking(appt, False)
+    appt.appointment_date = new_date_obj
+    appt.appointment_time = new_time_obj
+    if reason:
+        appt.reason = f"{appt.reason or ''} | Rescheduled: {reason}"[:255]
+    update_availability_booking(appt, True)
+    db.session.commit()
+    flash('Appointment rescheduled successfully.', 'success')
     return redirect(url_for('appointment.my_appointments'))
 
 

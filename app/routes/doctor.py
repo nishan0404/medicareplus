@@ -1,10 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db, bcrypt
-from app.models import Doctor, Appointment, Patient, ConsultationNote, Prescription, ChatMessage
+from app.models import Doctor, Appointment, Patient, ConsultationNote, Prescription, ChatMessage, DoctorAvailability
 from datetime import datetime, date, timedelta
 
 doctor = Blueprint('doctor', __name__)
+
+DOCTOR_SLOT_OPTIONS = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+    '16:00', '16:30',
+]
 
 
 @doctor.route('/doctor/dashboard')
@@ -357,9 +363,91 @@ def profile():
     ).distinct().count()
 
     total_appointments = Appointment.query.filter_by(doctor_id=current_user.id).count()
+    availability_slots = DoctorAvailability.query.filter(
+        DoctorAvailability.doctor_id == current_user.id,
+        DoctorAvailability.slot_date >= date.today(),
+    ).order_by(
+        DoctorAvailability.slot_date.asc(),
+        DoctorAvailability.slot_time.asc(),
+    ).limit(20).all()
 
     return render_template('doctor/profile.html',
         title             = 'My Profile',
         total_patients    = total_patients,
         total_appointments= total_appointments,
+        availability_slots= availability_slots,
+        slot_options      = DOCTOR_SLOT_OPTIONS,
+        today             = date.today().strftime('%Y-%m-%d'),
     )
+
+
+@doctor.route('/doctor/availability', methods=['POST'])
+@login_required
+def availability():
+    if current_user.role != 'doctor':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    action = request.form.get('action')
+
+    if action == 'add_slots':
+        slot_date = request.form.get('slot_date')
+        slot_times = request.form.getlist('slot_times')
+
+        try:
+            slot_date_obj = datetime.strptime(slot_date, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            flash('Please choose a valid availability date.', 'danger')
+            return redirect(url_for('doctor.profile'))
+
+        if slot_date_obj < date.today():
+            flash('Availability cannot be added for a past date.', 'danger')
+            return redirect(url_for('doctor.profile'))
+
+        if not slot_times:
+            flash('Please select at least one time slot.', 'danger')
+            return redirect(url_for('doctor.profile'))
+
+        added_count = 0
+        for slot_time in slot_times:
+            if slot_time not in DOCTOR_SLOT_OPTIONS:
+                continue
+            slot_time_obj = datetime.strptime(slot_time, '%H:%M').time()
+            existing = DoctorAvailability.query.filter_by(
+                doctor_id=current_user.id,
+                slot_date=slot_date_obj,
+                slot_time=slot_time_obj,
+            ).first()
+            if existing:
+                if not existing.is_booked:
+                    existing.is_available = True
+                continue
+            db.session.add(DoctorAvailability(
+                doctor_id=current_user.id,
+                slot_date=slot_date_obj,
+                slot_time=slot_time_obj,
+                is_available=True,
+                is_booked=False,
+            ))
+            added_count += 1
+
+        db.session.commit()
+        flash(f'Availability saved. {added_count} new slot(s) added.', 'success')
+
+    elif action == 'remove_slot':
+        slot_id = request.form.get('slot_id')
+        slot = DoctorAvailability.query.filter_by(
+            id=slot_id,
+            doctor_id=current_user.id,
+        ).first()
+        if not slot:
+            flash('Availability slot not found.', 'danger')
+            return redirect(url_for('doctor.profile'))
+        if slot.is_booked:
+            flash('Booked slots cannot be removed. Reschedule or cancel the appointment first.', 'danger')
+            return redirect(url_for('doctor.profile'))
+        db.session.delete(slot)
+        db.session.commit()
+        flash('Availability slot removed.', 'success')
+
+    return redirect(url_for('doctor.profile'))

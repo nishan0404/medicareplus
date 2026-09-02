@@ -123,6 +123,37 @@
                 Your symptom data is private and never shared. Results are AI-generated for guidance only.
             </p>
         </div>
+
+        <div class="mc-card mt-3">
+            <h3 style="font-size:.95rem; font-weight:600; color:#0B2545; margin-bottom:.85rem;">
+                <i class="fas fa-history me-2" style="color:#1A5276;"></i>Recent Checks
+            </h3>
+            {% if recent_logs %}
+                <div style="display:flex; flex-direction:column; gap:.6rem;">
+                {% for log in recent_logs %}
+                    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:.7rem .8rem; background:#f8fafc;">
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <div style="min-width:0;">
+                                <div style="font-size:.78rem; font-weight:700; color:#0B2545; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                    {{ log.input_text.replace('_', ' ').title() }}
+                                </div>
+                                <div style="font-size:.72rem; color:#64748b; margin-top:.15rem;">
+                                    {{ log.checked_at.strftime('%d %b %Y, %I:%M %p') }} · {{ log.urgency_level }} urgency
+                                </div>
+                            </div>
+                            <button type="button"
+                                    onclick='reuseSymptoms({{ log.input_text|tojson }})'
+                                    style="border:none; background:#dbeafe; color:#1e40af; border-radius:6px; padding:.3rem .55rem; font-size:.72rem; font-weight:600; cursor:pointer; flex-shrink:0;">
+                                Use Again
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p style="font-size:.82rem; color:#9ca3af; margin:0;">No previous symptom checks yet.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 </form>
@@ -162,5 +193,21 @@ document.getElementById('disclaimerCheck').addEventListener('change', function()
     btn.style.opacity = this.checked ? '1' : '.5';
     btn.style.cursor  = this.checked ? 'pointer' : 'not-allowed';
 });
+
+function reuseSymptoms(inputText) {
+    const symptoms = String(inputText || '').split(',').map(s => s.trim()).filter(Boolean);
+    document.querySelectorAll('input[name="symptoms"]').forEach((checkbox, idx) => {
+        const selected = symptoms.includes(checkbox.value);
+        checkbox.checked = selected;
+        syncLabelStyle(idx + 1);
+    });
+    const unmatched = symptoms.filter(symptom => {
+        return !Array.from(document.querySelectorAll('input[name="symptoms"]')).some(cb => cb.value === symptom);
+    });
+    document.getElementById('freeText').value = unmatched.map(s => s.replaceAll('_', ' ')).join(', ');
+    updateCharCount();
+    updateCount();
+    document.getElementById('symptomForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 </script>
 {% endblock %}

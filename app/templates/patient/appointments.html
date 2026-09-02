@@ -114,6 +114,13 @@
                             <i class="fas fa-comment-dots"></i> Chat
                         </a>
 
+                        {# ── Reschedule ── #}
+                        <button type="button"
+                                onclick="openRescheduleModal({{ appt.id }}, '{{ appt.doctor.full_name }}', '{{ appt.appointment_date.strftime('%Y-%m-%d') }}', '{{ appt.appointment_time.strftime('%H:%M') }}')"
+                                style="font-size:.8rem; padding:.4rem .85rem; background:#dbeafe; color:#1e40af; border:none; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:.4rem;">
+                            <i class="fas fa-calendar-alt"></i> Reschedule
+                        </button>
+
                         {# ── Cancel ── #}
                         <button type="button"
                                 onclick="openCancelModal({{ appt.id }}, '{{ appt.doctor.full_name }}', '{{ appt.appointment_date.strftime('%d %b %Y') }} {{ appt.appointment_time.strftime('%I:%M %p') }}')"
@@ -250,6 +257,59 @@
     {% endif %}
 </div>
 
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+      <div class="modal-header border-0 pb-0" style="padding:1.5rem 1.5rem .5rem;">
+        <h5 class="modal-title" style="color:#1e40af; font-weight:600;">
+            <i class="fas fa-calendar-alt me-2"></i>Reschedule Appointment
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:1rem 1.5rem 1.5rem;">
+        <p style="font-size:.875rem; margin-bottom:.25rem;">Rescheduling appointment with:</p>
+        <p class="fw-bold mb-3" id="reschedule-doctor-name" style="color:#0B2545;"></p>
+        <form id="reschedule-form" method="POST">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="mc-label">New Date</label>
+                <input type="date" name="appointment_date" id="reschedule-date" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label class="mc-label">New Time</label>
+                <select name="appointment_time" id="reschedule-time" class="form-control" required>
+                    {% for slot in default_slots %}
+                    <option value="{{ slot }}">{{ slot }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+          </div>
+          <div style="margin-bottom:1rem;">
+            <label class="mc-label">Reason <span style="font-weight:400; color:#9ca3af;">(optional)</span></label>
+            <textarea name="reschedule_reason" rows="3" maxlength="255"
+                      style="width:100%; padding:.65rem 1rem; border:1.5px solid #d1d5db; border-radius:8px; font-size:.875rem; outline:none; font-family:inherit; resize:none;"
+                      placeholder="e.g. Need a later time..."></textarea>
+          </div>
+          <div style="background:#dbeafe; border-radius:8px; padding:.75rem 1rem; font-size:.8rem; color:#1e40af; margin-bottom:1rem;">
+              <i class="fas fa-info-circle me-1"></i>
+              Rescheduling is not available within 2 hours of the original appointment.
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" style="flex:1; padding:.65rem; background:#1A5276; color:white; border:none; border-radius:8px; font-size:.875rem; font-weight:500; cursor:pointer;">
+                Save New Time
+            </button>
+            <button type="button" data-bs-dismiss="modal"
+                    style="flex:1; padding:.65rem; background:white; color:#374151; border:1.5px solid #d1d5db; border-radius:8px; font-size:.875rem; cursor:pointer;">
+                Keep Original
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Cancellation Modal -->
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -307,6 +367,20 @@ function openCancelModal(apptId, doctorName, apptTime) {
     document.getElementById('cancel-appt-time').textContent   = apptTime;
     document.getElementById('cancel-form').action = '/patient/appointments/cancel/' + apptId;
     new bootstrap.Modal(document.getElementById('cancelModal')).show();
+}
+
+function openRescheduleModal(apptId, doctorName, apptDate, apptTime) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayString = `${year}-${month}-${day}`;
+    document.getElementById('reschedule-doctor-name').textContent = doctorName;
+    document.getElementById('reschedule-date').min = todayString;
+    document.getElementById('reschedule-date').value = apptDate;
+    document.getElementById('reschedule-time').value = apptTime;
+    document.getElementById('reschedule-form').action = '/patient/appointments/reschedule/' + apptId;
+    new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
 }
 </script>
 {% endblock %}

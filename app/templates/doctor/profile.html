@@ -63,6 +63,63 @@
             </div>
         </div>
 
+        <!-- Availability -->
+        <div class="mc-card mb-3">
+            <h3 style="font-size:.95rem; font-weight:600; color:#0B2545; margin-bottom:1rem;">
+                <i class="fas fa-calendar-plus me-2" style="color:#1A5276;"></i>Availability
+            </h3>
+            <form method="POST" action="{{ url_for('doctor.availability') }}">
+                <input type="hidden" name="action" value="add_slots">
+                <div class="mb-3">
+                    <label class="mc-label">Available Date</label>
+                    <input type="date" name="slot_date" class="form-control" min="{{ today }}" value="{{ today }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="mc-label">Time Slots</label>
+                    <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.45rem;">
+                        {% for slot in slot_options %}
+                        <label style="display:flex; align-items:center; gap:.4rem; border:1px solid #e2e8f0; border-radius:8px; padding:.45rem .55rem; font-size:.78rem; color:#374151; cursor:pointer;">
+                            <input type="checkbox" name="slot_times" value="{{ slot }}" style="accent-color:#1A5276;">
+                            {{ slot }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button type="submit" class="btn-mc-green" style="width:100%; border:none; padding:.6rem; border-radius:8px; font-size:.875rem; cursor:pointer;">
+                    <i class="fas fa-save me-1"></i>Save Slots
+                </button>
+            </form>
+
+            <div style="border-top:1px solid #f1f5f9; margin-top:1rem; padding-top:1rem;">
+                <h4 style="font-size:.82rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.65rem;">Upcoming Slots</h4>
+                {% if availability_slots %}
+                    <div style="display:flex; flex-direction:column; gap:.45rem; max-height:220px; overflow-y:auto;">
+                    {% for slot in availability_slots %}
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.55rem .65rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                            <div>
+                                <div style="font-size:.8rem; font-weight:600; color:#0B2545;">{{ slot.slot_date.strftime('%d %b %Y') }}</div>
+                                <div style="font-size:.76rem; color:#64748b;">{{ slot.slot_time.strftime('%I:%M %p') }}</div>
+                            </div>
+                            {% if slot.is_booked %}
+                                <span style="font-size:.7rem; font-weight:700; color:#991b1b; background:#fee2e2; border-radius:20px; padding:.2rem .5rem;">Booked</span>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('doctor.availability') }}">
+                                    <input type="hidden" name="action" value="remove_slot">
+                                    <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                                    <button type="submit" title="Remove slot" style="width:28px; height:28px; border:none; border-radius:50%; background:#fee2e2; color:#991b1b; cursor:pointer;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="font-size:.82rem; color:#9ca3af; margin:0;">No custom availability added yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Change Password -->
         <div class="mc-card">
             <h3 style="font-size:.95rem; font-weight:600; color:#0B2545; margin-bottom:1rem;">

@@ -187,6 +187,9 @@ def records():
 @login_required
 def symptoms():
     all_symptoms = get_all_symptoms()
+    recent_logs = SymptomLog.query.filter_by(
+        patient_id=current_user.id
+    ).order_by(SymptomLog.checked_at.desc()).limit(5).all()
 
     if request.method == 'POST':
         selected_symptoms = request.form.getlist('symptoms')
@@ -228,7 +231,8 @@ def symptoms():
 
     return render_template('patient/symptoms.html',
         title='AI Symptom Checker',
-        all_symptoms=all_symptoms
+        all_symptoms=all_symptoms,
+        recent_logs=recent_logs,
     )
 
 

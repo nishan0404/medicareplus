@@ -6,7 +6,7 @@ import requests
 chatbot = Blueprint('chatbot', __name__)
 
 GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.6-flash')
 
 
 def build_gemini_contents(system_prompt, history, user_message):

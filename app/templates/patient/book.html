@@ -47,6 +47,7 @@
                 {% for doctor in doctors %}
                 <div class="doctor-card mb-3 p-4 rounded-3 border"
                      data-spec="{{ doctor.specialisation }}"
+                     data-doctor-id="{{ doctor.id }}"
                      style="border-color:#e5e7eb; transition: all .15s; cursor:pointer;"
                      onclick="toggleBookingForm({{ doctor.id }}, this)">
                     <div class="d-flex align-items-start justify-content-between">
@@ -113,21 +114,11 @@
                                     <label class="mc-label">Time</label>
                                     <select name="appointment_time" class="form-control appointment-time-select" required>
                                         <option value="">Select time</option>
-                                        <option value="09:00">9:00 AM</option>
-                                        <option value="09:30">9:30 AM</option>
-                                        <option value="10:00">10:00 AM</option>
-                                        <option value="10:30">10:30 AM</option>
-                                        <option value="11:00">11:00 AM</option>
-                                        <option value="11:30">11:30 AM</option>
-                                        <option value="13:00">1:00 PM</option>
-                                        <option value="13:30">1:30 PM</option>
-                                        <option value="14:00">2:00 PM</option>
-                                        <option value="14:30">2:30 PM</option>
-                                        <option value="15:00">3:00 PM</option>
-                                        <option value="15:30">3:30 PM</option>
-                                        <option value="16:00">4:00 PM</option>
-                                        <option value="16:30">4:30 PM</option>
+                                        {% for slot in default_slots %}
+                                        <option value="{{ slot }}">{{ slot }}</option>
+                                        {% endfor %}
                                     </select>
+                                    <small class="slot-help" style="font-size:.75rem; color:#64748b;">Choose an available time.</small>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -215,6 +206,9 @@ function formatLocalDate(date) {
 }
 
 const today = formatLocalDate(new Date());
+const availabilityMap = {{ availability_map|tojson }};
+const bookedSlots = {{ booked_slots|tojson }};
+const customDoctorIds = {{ custom_doctor_ids|tojson }};
 document.getElementById('date_filter').value = today;
 
 // Auto-select specialty if arriving from symptom results
@@ -248,7 +242,7 @@ function toggleBookingForm(doctorId, card) {
         const dateInput = document.getElementById('appt-date-' + doctorId);
         if (dateInput) {
             dateInput.min = today;
-            dateInput.value = today;
+            dateInput.value = document.getElementById('date_filter').value || today;
             dateInput.addEventListener('change', () => updateAvailableTimes(form));
             updateAvailableTimes(form);
         }
@@ -289,24 +283,41 @@ function syncTypeStyle(doctorId) {
 function updateAvailableTimes(form) {
     const dateInput = form.querySelector('input[name="appointment_date"]');
     const timeSelect = form.querySelector('select[name="appointment_time"]');
+    const doctorId = form.id.replace('form-', '');
+    const help = form.querySelector('.slot-help');
     if (!dateInput || !timeSelect) return;
 
     const selectedDate = dateInput.value;
     const now = new Date();
     const todayString = formatLocalDate(now);
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const doctorAvailability = availabilityMap[doctorId] || {};
+    const explicitSlots = doctorAvailability[selectedDate] || [];
+    const doctorUsesCustomAvailability = customDoctorIds.includes(doctorId);
+    const doctorBookedSlots = (bookedSlots[doctorId] || {})[selectedDate] || [];
+    let visibleCount = 0;
 
     Array.from(timeSelect.options).forEach(option => {
         if (!option.value) return;
         const [hours, minutes] = option.value.split(':').map(Number);
         const optionMinutes = hours * 60 + minutes;
         const isPastToday = selectedDate === todayString && optionMinutes <= currentMinutes;
-        option.disabled = isPastToday;
-        option.hidden = isPastToday;
+        const unavailableByDoctor = doctorUsesCustomAvailability && !explicitSlots.includes(option.value);
+        const alreadyBooked = doctorBookedSlots.includes(option.value);
+        const shouldHide = isPastToday || unavailableByDoctor || alreadyBooked;
+        option.disabled = shouldHide;
+        option.hidden = shouldHide;
+        if (!shouldHide) visibleCount++;
     });
 
     if (timeSelect.selectedOptions[0]?.disabled) {
         timeSelect.value = '';
+    }
+    if (help) {
+        help.textContent = visibleCount
+            ? `${visibleCount} time slot${visibleCount === 1 ? '' : 's'} available for this date.`
+            : 'No open slots for this date. Please choose another date.';
+        help.style.color = visibleCount ? '#64748b' : '#991b1b';
     }
 }
 
