@@ -210,7 +210,6 @@ def symptoms():
             flash('Could not identify symptoms. Please try different symptom names.', 'warning')
             return redirect(url_for('patient.symptoms'))
 
-        from app.models import SymptomLog
         log = SymptomLog(
             patient_id           = current_user.id,
             input_text           = ', '.join(selected_symptoms),
