@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from flask_login import login_required, current_user
 from flask_mail import Message
 from app import db, mail, socketio
@@ -7,6 +7,7 @@ from datetime import datetime, date, timedelta
 import stripe
 import os
 import uuid
+import threading
 
 appointment = Blueprint('appointment', __name__)
 
@@ -168,6 +169,22 @@ def send_booking_confirmation_email(appt):
         doctor_text,
     )
     return patient_sent and doctor_sent
+
+
+def queue_booking_confirmation_email(appointment_id):
+    app = current_app._get_current_object()
+
+    def send_in_background():
+        with app.app_context():
+            try:
+                appt = Appointment.query.get(appointment_id)
+                if appt:
+                    send_booking_confirmation_email(appt)
+            except Exception:
+                db.session.rollback()
+                app.logger.exception('Booking confirmation email failed')
+
+    threading.Thread(target=send_in_background, daemon=True).start()
 
 
 def is_call_available(appt):
@@ -467,7 +484,7 @@ def payment_success():
     db.session.commit()
     update_availability_booking(new_appointment, True)
     db.session.commit()
-    send_booking_confirmation_email(new_appointment)
+    queue_booking_confirmation_email(new_appointment.id)
     session.pop('pending_booking', None)
     flash('Appointment booked!', 'success')
     return redirect(url_for('appointment.booking_confirmation', appointment_id=new_appointment.id))
