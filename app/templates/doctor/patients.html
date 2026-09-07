@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="mc-page-title mb-0">My Patients</h1>
+        <p class="mc-page-sub">Select a previous patient to review history or issue a prescription</p>
+    </div>
+    <a href="/doctor/dashboard" class="btn-mc-outline" style="font-size:.875rem; text-decoration:none; display:flex; align-items:center; gap:.5rem;">
+        <i class="fas fa-arrow-left"></i> Dashboard
+    </a>
+</div>
+
+<div class="mc-card mb-4">
+    <form method="GET" action="{{ url_for('doctor.patients') }}" class="row g-2 align-items-end">
+        <div class="col-md-9">
+            <label class="form-label fw-bold" style="color:#0B2545;">Search patient</label>
+            <input type="text" name="search" value="{{ search }}" class="form-control"
+                   placeholder="Search by name, email, or phone">
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn-mc-blue flex-fill" style="border-radius:8px;">
+                <i class="fas fa-search me-1"></i> Search
+            </button>
+            {% if search %}
+            <a href="{{ url_for('doctor.patients') }}" class="btn-mc-outline" style="border-radius:8px; text-decoration:none;">
+                Clear
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="mc-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mc-card-header mb-0">
+            <i class="fas fa-users me-2" style="color:#1A5276;"></i>Patients
+        </h2>
+        <span style="font-size:.78rem; color:#64748b;">{{ patients|length }} patient{{ 's' if patients|length != 1 else '' }}</span>
+    </div>
+
+    {% if patients %}
+        <div class="d-none d-md-grid" style="grid-template-columns:1.5fr 1.1fr .8fr .8fr 1.3fr; gap:.75rem; padding:.55rem .75rem; background:#f8fafc; border-radius:8px; margin-bottom:.6rem; font-size:.74rem; font-weight:700; color:#64748b; text-transform:uppercase;">
+            <span>Patient</span>
+            <span>Contact</span>
+            <span>Visits</span>
+            <span>Prescriptions</span>
+            <span style="text-align:right;">Actions</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:.65rem;">
+        {% for patient in patients %}
+            {% set stats = patient_stats[patient.id] %}
+            <div style="border:1.5px solid #e5e7eb; border-radius:10px; padding:.9rem; background:white;">
+                <div class="d-grid align-items-center gap-3" style="grid-template-columns:1.5fr 1.1fr .8fr .8fr 1.3fr;">
+                    <div>
+                        <div style="font-weight:700; color:#0B2545;">{{ patient.full_name }}</div>
+                        <div style="font-size:.78rem; color:#64748b;">
+                            Last visit:
+                            {% if stats.last_appointment %}
+                                {{ stats.last_appointment.appointment_date.strftime('%d %b %Y') }}
+                            {% else %}
+                                Not available
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="font-size:.82rem; color:#374151;">
+                        <div>{{ patient.email }}</div>
+                        <div style="color:#64748b;">{{ patient.phone }}</div>
+                    </div>
+                    <div style="font-weight:700; color:#1A5276;">{{ stats.appointments }}</div>
+                    <div style="font-weight:700; color:#1A8A4A;">{{ stats.prescriptions }}</div>
+                    <div class="d-flex justify-content-end gap-2 flex-wrap">
+                        <a href="{{ url_for('doctor.patient_history', patient_id=patient.id) }}"
+                           class="btn-mc-outline" style="font-size:.78rem; padding:.4rem .7rem; border-radius:7px; text-decoration:none;">
+                            <i class="fas fa-history me-1"></i> History
+                        </a>
+                        {% if stats.last_appointment %}
+                        <a href="{{ url_for('doctor.prescribe', appointment_id=stats.last_appointment.id) }}"
+                           class="btn-mc-green" style="font-size:.78rem; padding:.4rem .7rem; border-radius:7px; text-decoration:none;">
+                            <i class="fas fa-pills me-1"></i> Prescribe
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div style="width:64px; height:64px; background:#f1f5f9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                <i class="fas fa-user-injured" style="font-size:1.6rem; color:#94a3b8;"></i>
+            </div>
+            <h6 style="color:#0B2545; font-weight:600;">No patients found</h6>
+            <p style="font-size:.875rem; color:#64748b; margin:0;">Patients appear here after they book an appointment with you.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

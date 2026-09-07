@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app import db, bcrypt
 from app.models import Doctor, Appointment, Patient, ConsultationNote, Prescription, ChatMessage, DoctorAvailability
 from datetime import datetime, date, timedelta
+from sqlalchemy import or_
 
 doctor = Blueprint('doctor', __name__)
 
@@ -253,6 +254,58 @@ def chat_inbox():
         chat_open_map= chat_open_map,
         total_unread = total_unread,
         today        = date.today(),
+    )
+
+
+@doctor.route('/doctor/patients')
+@login_required
+def patients():
+    if current_user.role != 'doctor':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    search = request.args.get('search', '').strip()
+
+    query = Patient.query.join(Appointment, Appointment.patient_id == Patient.id).filter(
+        Appointment.doctor_id == current_user.id,
+        Appointment.status != 'Cancelled',
+    )
+
+    if search:
+        query = query.filter(or_(
+            Patient.full_name.ilike(f'%{search}%'),
+            Patient.email.ilike(f'%{search}%'),
+            Patient.phone.ilike(f'%{search}%'),
+        ))
+
+    patients = query.distinct().order_by(Patient.full_name.asc()).all()
+
+    patient_stats = {}
+    for patient_obj in patients:
+        appointments = Appointment.query.filter_by(
+            patient_id=patient_obj.id,
+            doctor_id=current_user.id,
+        ).filter(Appointment.status != 'Cancelled').all()
+        last_appointment = sorted(
+            appointments,
+            key=lambda appt: (appt.appointment_date, appt.appointment_time),
+            reverse=True,
+        )[0] if appointments else None
+        patient_stats[patient_obj.id] = {
+            'appointments': len(appointments),
+            'prescriptions': Prescription.query.filter_by(
+                patient_id=patient_obj.id,
+                doctor_id=current_user.id,
+            ).count(),
+            'last_appointment': last_appointment,
+        }
+
+    return render_template(
+        'doctor/patients.html',
+        title='My Patients',
+        patients=patients,
+        patient_stats=patient_stats,
+        search=search,
     )
 
 

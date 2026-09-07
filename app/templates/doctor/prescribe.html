@@ -12,8 +12,8 @@
         </p>
     </div>
     <div class="col-auto">
-        <a href="/doctor/appointment/{{ appt.id }}/notes" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back to Notes
+        <a href="{{ url_for('doctor.patient_history', patient_id=appt.patient_id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Patient History
         </a>
     </div>
 </div>

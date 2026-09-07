@@ -26,6 +26,11 @@
         </a>
     </li>
     <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#appointments">
+            <i class="fas fa-calendar-check me-2"></i>Appointments
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#prescriptions">
             <i class="fas fa-pills me-2"></i>Prescriptions
         </a>
@@ -68,6 +73,50 @@
                 <div class="card-body text-center py-5">
                     <i class="fas fa-file-medical fa-4x text-muted mb-3"></i>
                     <h5 class="text-muted">No consultation history</h5>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Appointments -->
+    <div class="tab-pane fade" id="appointments">
+        {% if appointments %}
+            {% for appt in appointments %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                        <div>
+                            <h6 class="fw-bold mb-1" style="color:#0B2545;">
+                                {{ appt.appointment_date.strftime('%d %B %Y') }}
+                                at {{ appt.appointment_time.strftime('%I:%M %p') }}
+                            </h6>
+                            <p class="text-muted mb-1">
+                                {{ appt.reason or 'No reason provided' }}
+                            </p>
+                            <span class="badge bg-secondary">{{ appt.status }}</span>
+                            {% if appt.appointment_type %}
+                                <span class="badge bg-light text-dark">{{ appt.appointment_type }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('doctor.prescribe', appointment_id=appt.id) }}"
+                               class="btn btn-success btn-sm">
+                                <i class="fas fa-pills me-1"></i>Prescribe
+                            </a>
+                            <a href="{{ url_for('doctor.write_notes', appointment_id=appt.id) }}"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-notes-medical me-1"></i>Notes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No appointments found</h5>
                 </div>
             </div>
         {% endif %}
