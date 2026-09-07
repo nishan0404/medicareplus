@@ -134,7 +134,10 @@ Important rules:
 - For serious symptoms, recommend seeing a doctor or calling 000 in emergencies
 - Be friendly, helpful, and professional
 - Keep responses concise and clear
-- Never provide specific medical diagnoses"""
+- Never provide specific medical diagnoses
+- Do not use Markdown formatting, tables, headings, or bold text
+- Write plain text only, with short lines and simple numbered steps when useful
+- Keep normal navigation answers under 5 short steps"""
 
     try:
         reply = get_groq_reply(system_prompt, history, user_message)
