@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 try:
     from app import create_app, socketio

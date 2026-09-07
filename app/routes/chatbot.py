@@ -5,8 +5,21 @@ import requests
 
 chatbot = Blueprint('chatbot', __name__)
 
+GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b')
 GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.6-flash')
+
+
+def build_openai_messages(system_prompt, history, user_message):
+    messages = [{'role': 'system', 'content': system_prompt}]
+    for msg in history[-10:]:
+        role = 'assistant' if msg.get('role') == 'assistant' else 'user'
+        content = str(msg.get('content', '')).strip()
+        if content:
+            messages.append({'role': role, 'content': content})
+    messages.append({'role': 'user', 'content': user_message})
+    return messages
 
 
 def build_gemini_contents(system_prompt, history, user_message):
@@ -38,6 +51,55 @@ def extract_gemini_reply(response_data):
         return None
     parts = candidates[0].get('content', {}).get('parts', [])
     return ''.join(part.get('text', '') for part in parts).strip()
+
+
+def get_groq_reply(system_prompt, history, user_message):
+    groq_api_key = os.getenv('GROQ_API_KEY')
+    if not groq_api_key:
+        return None
+
+    response = requests.post(
+        GROQ_API_URL,
+        headers={
+            'Authorization': f'Bearer {groq_api_key}',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'model': GROQ_MODEL,
+            'messages': build_openai_messages(system_prompt, history, user_message),
+            'max_tokens': 500,
+            'temperature': 0.7,
+            'reasoning_effort': 'low',
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    choices = response.json().get('choices', [])
+    if not choices:
+        return None
+    return choices[0].get('message', {}).get('content', '').strip()
+
+
+def get_gemini_reply(system_prompt, history, user_message):
+    gemini_api_key = os.getenv('GEMINI_API_KEY')
+    if not gemini_api_key:
+        return None
+
+    response = requests.post(
+        GEMINI_API_URL.format(model=GEMINI_MODEL),
+        params={'key': gemini_api_key},
+        headers={'Content-Type': 'application/json'},
+        json={
+            'contents': build_gemini_contents(system_prompt, history, user_message),
+            'generationConfig': {
+                'maxOutputTokens': 500,
+                'temperature': 0.7,
+            },
+        },
+        timeout=30,
+    )
+    response.raise_for_status()
+    return extract_gemini_reply(response.json())
 
 @chatbot.route('/api/chat', methods=['POST'])
 @login_required
@@ -75,34 +137,15 @@ Important rules:
 - Never provide specific medical diagnoses"""
 
     try:
-        gemini_api_key = os.getenv('GEMINI_API_KEY')
-        if not gemini_api_key:
-            print('Gemini API error: GEMINI_API_KEY is not configured')
-            return jsonify({
-                'reply': 'AI chat is not configured yet. Please add the Gemini API key and try again.'
-            })
-
-        response = requests.post(
-            GEMINI_API_URL.format(model=GEMINI_MODEL),
-            params={'key': gemini_api_key},
-            headers={'Content-Type': 'application/json'},
-            json={
-                'contents': build_gemini_contents(system_prompt, history, user_message),
-                'generationConfig': {
-                    'maxOutputTokens': 500,
-                    'temperature': 0.7,
-                },
-            },
-            timeout=30,
-        )
-        response.raise_for_status()
-        reply = extract_gemini_reply(response.json())
+        reply = get_groq_reply(system_prompt, history, user_message)
+        if not reply:
+            reply = get_gemini_reply(system_prompt, history, user_message)
         if not reply:
             reply = 'I could not generate a response right now. Please try again.'
         return jsonify({'reply': reply})
 
     except Exception as e:
-        print(f"Gemini API error: {e}")
+        print(f"Chatbot API error: {e}")
         return jsonify({
             'reply': 'I am having trouble connecting right now. Please try again or contact the clinic directly.'
         })
