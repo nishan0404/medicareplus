@@ -50,6 +50,7 @@ def dashboard():
     upcoming_today  = sum(1 for a in todays_appts if a.status == 'Upcoming')
     in_progress_today = sum(1 for a in todays_appts if a.status == 'In-Progress')
     completed_today = sum(1 for a in todays_appts if a.status == 'Completed')
+    first_in_progress_appt = next((a for a in todays_appts if a.status == 'In-Progress'), None)
 
     from app.routes.appointment import is_call_available, is_chat_available
     call_available = {a.id: is_call_available(a) for a in todays_appts}
@@ -92,6 +93,7 @@ def dashboard():
         week_cancelled    = week_cancelled,
         week_rescheduled  = week_rescheduled,
         pending_notes     = pending_notes,
+        first_in_progress_appt = first_in_progress_appt,
     )
 
 
@@ -127,8 +129,17 @@ def write_notes(appointment_id):
     if request.method == 'POST':
         diagnosis  = request.form.get('diagnosis', '').strip()
         notes_text = request.form.get('notes', '').strip()
-        follow_up  = request.form.get('follow_up_date') or None
+        follow_up_raw = request.form.get('follow_up_date') or None
         no_notes   = request.form.get('no_notes') == 'on'
+
+        follow_up = None
+        if follow_up_raw:
+            try:
+                follow_up = datetime.strptime(follow_up_raw, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Follow-up date is invalid.', 'danger')
+                return render_template('doctor/notes.html', title='Write Notes',
+                                       appt=appt, existing_note=existing_note)
 
         if not no_notes and not diagnosis:
             flash('Diagnosis is required unless marking as no notes recorded.', 'danger')

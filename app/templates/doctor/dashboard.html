@@ -256,11 +256,18 @@
         <div class="mc-card mb-3">
             <h2 class="mc-card-header mb-3">Quick Actions</h2>
             <div class="d-flex flex-column gap-2">
-                <a href="#"
-                   onclick="document.querySelector('[data-status=In-Progress]')?.click(); return false;"
+                {% if first_in_progress_appt %}
+                <a href="{{ url_for('doctor.write_notes', appointment_id=first_in_progress_appt.id) }}"
                    class="btn-mc-blue text-decoration-none text-center py-3" style="border-radius:8px; font-size:.875rem; font-weight:500;">
                     <i class="fas fa-notes-medical me-2"></i>Write Notes
                 </a>
+                {% else %}
+                <a href="#"
+                   onclick="alert('Start an appointment first, then write consultation notes.'); return false;"
+                   class="btn-mc-blue text-decoration-none text-center py-3" style="border-radius:8px; font-size:.875rem; font-weight:500; opacity:.75;">
+                    <i class="fas fa-notes-medical me-2"></i>Write Notes
+                </a>
+                {% endif %}
                 <a href="/doctor/patients"
                    class="btn-mc-green text-decoration-none text-center py-3" style="border-radius:8px; font-size:.875rem; font-weight:500;"
                    >
