@@ -167,6 +167,8 @@ def write_notes(appointment_id):
         appt.completed_at = datetime.now()
         db.session.commit()
         flash('Notes saved and appointment completed.', 'success')
+        if request.form.get('return_to') == 'patient_history':
+            return redirect(url_for('doctor.patient_history', patient_id=appt.patient_id))
         return redirect(url_for('doctor.dashboard'))
 
     return render_template('doctor/notes.html',

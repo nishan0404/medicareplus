@@ -12,9 +12,15 @@
         </p>
     </div>
     <div class="col-auto">
+        {% if request.args.get('return_to') == 'patient_history' %}
+        <a href="{{ url_for('doctor.patient_history', patient_id=appt.patient_id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Patient History
+        </a>
+        {% else %}
         <a href="/doctor/dashboard" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>Back
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -28,6 +34,9 @@
             </div>
             <div class="card-body p-4">
                 <form method="POST">
+                    {% if request.args.get('return_to') == 'patient_history' %}
+                    <input type="hidden" name="return_to" value="patient_history">
+                    {% endif %}
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">
